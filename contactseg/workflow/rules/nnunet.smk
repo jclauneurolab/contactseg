@@ -1,4 +1,4 @@
-from nnunet_contact_seg.workflow.lib import utils as utils
+from contactseg.workflow.lib import utils as utils
 
 
 def get_model():

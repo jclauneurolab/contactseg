@@ -25,13 +25,13 @@ jobs:
           python-version: "3.9"
 
       - name: isort
-        run: uv run isort nnunet_contact_seg/*.py -c
+        run: uv run isort contactseg/*.py -c
 
       - name: Black
-        run: uv run black nnunet_contact_seg --check
+        run: uv run black contactseg --check
 
       - name: snakefmt
-        run: uv run snakefmt nnunet_contact_seg --check
+        run: uv run snakefmt contactseg --check
 
   test:
     runs-on: ubuntu-latest
@@ -59,10 +59,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
           install-library: true
 
-      - name: Setup env for nnunet_contact_seg
+      - name: Setup env for contactseg
         run: |
-          echo "nnUNet_SEEG_CACHE_DIR=`pwd`/tests/data/nnunet_seeg_cache_dir" >> $GITHUB_ENV
+          echo "CONTACTSEG_CACHE_DIR=`pwd`/tests/data/contactseg_cache_dir" >> $GITHUB_ENV
 
       - name: Test single subject bids
         run: |
-          uv run nnunet_contact_seg tests/data/ test_out participant -np --label --transform
+          uv run contactseg tests/data/ test_out participant -np --label --transform
