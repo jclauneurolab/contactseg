@@ -41,7 +41,7 @@ uv pip install -e .
 To verify that the installation was successful, run:
 
 ```
-nnunet_contact_seg -h
+contactseg -h
 ```
 
 This should display the help message for the CLI. If it doesn’t, ensure that your virtual environment is activated and that the installation completed without errors.
@@ -49,7 +49,7 @@ This should display the help message for the CLI. If it doesn’t, ensure that y
 To use the BIDS App, run:
 
 ```
-nnunet_contact_seg /path/to/bids/dataset /path/to/output/derivatives participant --cores all
+contactseg /path/to/bids/dataset /path/to/output/derivatives participant --cores all
 ```
 
 Replace /path/to/bids/dataset with the path to your BIDS-compliant input dataset and /path/to/output/derivatives with the desired output directory.

@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('.'))
 # -- Project information -----------------------------------------------------
 
 
-project = "nnunet_contact_seg"
+project = "contactseg"
 copyright = f"{datetime.date.today().year}, Arun Thurairajah"
 author = "Arun Thurairajah"
 

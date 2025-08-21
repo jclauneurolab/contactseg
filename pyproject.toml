@@ -1,5 +1,5 @@
 [project]
-name = "nnUNet_contact_seg"
+name = "contactseg"
 version = "0.1.0"
 description = "Automatic contact segmentation BIDS app"
 readme = "README.md"
@@ -37,9 +37,9 @@ dev = [
 ]
 
 [project.scripts]
-nnunet_contact_seg = "nnunet_contact_seg.run:app.run"
-quality-check = "nnunet_contact_seg.tasks:quality_check"
-quality-fix   = "nnunet_contact_seg.tasks:quality_fix"
+contactseg = "contactseg.run:app.run"
+quality-check = "contactseg.tasks:quality_check"
+quality-fix   = "contactseg.tasks:quality_fix"
 
 [tool.setuptools.packages.find]
 where = ["."]

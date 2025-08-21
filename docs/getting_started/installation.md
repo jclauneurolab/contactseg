@@ -3,7 +3,7 @@
 Install from github with pip:
 
 ```bash
-pip install -e git+https://github.com/arunthurai/nnunet_contact_seg#egg=nnunet_contact_seg
+pip install -e git+https://github.com/arunthurai/contactseg#egg=contactseg
 ```
 
 Note: you can re-run this command to re-install with the latest version
@@ -13,13 +13,13 @@ Note: you can re-run this command to re-install with the latest version
 Do a dry-run first (`-n`) and simply print (`-p`) what would be run:
 
 ```bash
-nnunet_contact_seg /path/to/bids/dir /path/to/output/dir participant -np
+contactseg /path/to/bids/dir /path/to/output/dir participant -np
 ```
 
 Run the app, using all cores::
 
 ```bash
-nnunet_contact_seg /path/to/bids/dir /path/to/output/dir participant --cores all
+contactseg /path/to/bids/dir /path/to/output/dir participant --cores all
 ```
 
 If any workflow rules require containers, then run with the `--use-singularity` option.
@@ -35,22 +35,22 @@ summarize outputs, by using the `report(...)` function on any snakemake output.
 To generate a report, run:
 
 ```bash
-nnunet_contact_seg /path/to/bids/dir /path/to/output/dir participant --report
+contactseg /path/to/bids/dir /path/to/output/dir participant --report
 ```
 
 # Compute Canada Instructions
 
 ## Setting up a dev environment
 
-Here are some instructions to get your python environment set-up on graham to run nnunet_contact_seg:
+Here are some instructions to get your python environment set-up on graham to run contactseg:
 
 ### Create a virtualenv and activate it:
 
 ```bash
 cd $SCRATCH
 module load python/3
-virtualenv venv_nnunet_contact_seg
-source venv_nnunet_contact_seg/bin/activate
+virtualenv venv_contactseg
+source venv_contactseg/bin/activate
 ```
 
 ### Follow the steps above to install from github repository
@@ -69,23 +69,23 @@ These are used in the instructions below.
 In an interactive job (for testing):
 
 ```bash
-regularInteractive -n 8 nnunet_contact_seg bids_dir out_dir participant --participant_label 001 -j 8
+regularInteractive -n 8 contactseg bids_dir out_dir participant --participant_label 001 -j 8
 ```
 
 Submitting a job (for larger cores, more subjects), still single job, but snakemake will parallelize over the 32 cores:
 
 ```bash
-regularSubmit -j Fat nnunet_contact_seg bids_dir out_dir participant  -j 32
+regularSubmit -j Fat contactseg bids_dir out_dir participant  -j 32
 ```
 
 Scaling up to ~hundred subjects (needs cc-slurm snakemake profile installed), submits 1 16core job per subject:
 
 ```bash
-nnunet_contact_seg bids_dir out_dir participant  --profile cc-slurm
+contactseg bids_dir out_dir participant  --profile cc-slurm
 ```
 
 Scaling up to even more subjects (uses group-components to bundle multiple subjects in each job), 1 32core job for N subjects (e.g. 10):
 
 ```bash
-nnunet_contact_seg bids_dir out_dir participant  --profile cc-slurm --group-components subj=10
+contactseg bids_dir out_dir participant  --profile cc-slurm --group-components subj=10
 ```

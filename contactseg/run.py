@@ -6,14 +6,14 @@ from pathlib import Path
 from snakebids import bidsapp, plugins
 
 if "__file__" not in globals():
-    __file__ = "../nnunet_contact_seg/run.py"
+    __file__ = "../contactseg/run.py"
 import os
 
 app = bidsapp.app(
     [
         plugins.SnakemakeBidsApp(Path(__file__).resolve().parent),
         plugins.BidsValidator(),
-        plugins.Version(distribution="nnUNet_contact_seg"),
+        plugins.Version(distribution="contactseg"),
         plugins.CliConfig("parse_args"),
         plugins.ComponentEdit("pybids_inputs"),
     ]
