@@ -87,10 +87,18 @@ parse_args:
     default: false
     action: store_true
   --manual_reg_matrix:
-    help: >
-      Path to .txt file with the registration matrix.
-    default: false
-    action: store_true
+    help: 'Path to .txt file with the registration matrix.'
+    default: False
+    action: 'store_true'
+  --contacts_qc:
+    help: 'Produces html qc plots to show labelled contacts over the ct and t1w images (default: %(default)s)'
+    default: False
+    action: 'store_true' 
+  --exclude_label_map:
+    help: 'Exludes the label mapping code for the qc plots only displaying the acronyms (default: %(default)s)'
+    default: False
+    action: 'store_true' 
+
 
 containers: {}
 

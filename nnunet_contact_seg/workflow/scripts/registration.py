@@ -80,9 +80,17 @@ def registration(fixed_image, moving_image, xfm_ras, xfm_slicer, out_im):
     # Load images
     fixed_image = ants.image_read(fixed_image)
     moving_image = ants.image_read(moving_image)
-    # print("Before transform ct:", moving_image.shape)
 
     # Perform registration
+    # registration_result = ants.registration(
+    #     fixed=fixed_image,
+    #     moving=moving_image,
+    #     type_of_transform="Rigid",
+    #     gradient_step=0.1,
+    #     aff_iterations=(1000, 500, 250, 100),
+    #     aff_shrink_factors=(8, 4, 2, 1),
+    # )
+
     registration_result = ants.registration(
         fixed=fixed_image,
         moving=moving_image,
@@ -90,11 +98,14 @@ def registration(fixed_image, moving_image, xfm_ras, xfm_slicer, out_im):
         gradient_step=0.1,
         aff_iterations=(1000, 500, 250, 100),
         aff_shrink_factors=(8, 4, 2, 1),
+        aff_smoothing_sigmas=(3, 2, 1, 0),
+        aff_metric="MI",
+        aff_sampling="32",
+        aff_random_sampling_rate=0.25,
     )
 
     # Get the registered (warped) moving image
     registered_image = registration_result["warpedmovout"]
-    # print("after transform ct:", registered_image.shape)
 
     # Get the forward transformation
     transformation_file_path = registration_result["fwdtransforms"][0]

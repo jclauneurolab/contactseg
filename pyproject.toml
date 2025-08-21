@@ -19,6 +19,7 @@ dependencies = [
     "torchaudio>=2.5.1",
     "torchvision>=0.20.1",
     "antspyx>=0.5.4",
+    "svgutils>=0.3.4",
 ]
 
 [project.optional-dependencies]
@@ -37,6 +38,8 @@ dev = [
 
 [project.scripts]
 nnunet_contact_seg = "nnunet_contact_seg.run:app.run"
+quality-check = "nnunet_contact_seg.tasks:quality_check"
+quality-fix   = "nnunet_contact_seg.tasks:quality_fix"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -44,24 +47,3 @@ where = ["."]
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.poe.tasks]
-quality_check = { shell = "isort nnunet_contact_seg/*.py -c && black nnunet_contact_seg --check && snakefmt nnunet_contact_seg --check" }
-quality_fix = { shell = "isort nnunet_contact_seg/*.py && black nnunet_contact_seg  && snakefmt nnunet_contact_seg" }
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-
-[tool.pylint.master]
-ignore-patterns = "^[0-9][0-9]+_,^test_"
-
-[tool.pylint.format]
-good-names = "i,j,k,ex,_,x,y,f,d"
-
-[tool.pylint.messages_control]
-disable = """
-    missing-function-docstring,
-    missing-module-docstring,
-    fixme
-"""

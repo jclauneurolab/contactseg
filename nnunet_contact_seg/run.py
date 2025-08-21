@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import os
+import sys
 from pathlib import Path
 
-import sys
 from snakebids import bidsapp, plugins
 
 if "__file__" not in globals():
