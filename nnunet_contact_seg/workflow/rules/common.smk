@@ -14,15 +14,18 @@ def get_reg_matrix():
             **inputs["post_ct"].wildcards,
         )
 
+
 def get_registered_ct_image():
     if not config["manual_reg_matrix"]:
-        return bids(
-            root=config["output_dir"],
-            datatype="registration",
-            space="T1w",
-            suffix="ct.nii.gz",
-            **inputs["post_ct"].wildcards,
-        ),
+        return (
+            bids(
+                root=config["output_dir"],
+                datatype="registration",
+                space="T1w",
+                suffix="ct.nii.gz",
+                **inputs["post_ct"].wildcards,
+            ),
+        )
     else:
         return bids(
             root=config["bids_dir"],
@@ -33,6 +36,7 @@ def get_registered_ct_image():
             extension=".nii.gz",
             **inputs["post_ct"].wildcards,
         )
+
 
 def get_final_output():
     final = []

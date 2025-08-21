@@ -61,22 +61,20 @@ map_acronyms = {
     "Unc": "Uncus",
     "We": "Wernicke",
     "Mes": "Mesial",
-    "MFG": "Middle Frontal Gyrus"
+    "MFG": "Middle Frontal Gyrus",
 }
 
-map_hemi = {
-    "L": "Left",
-    "R": "Right"
-}
+map_hemi = {"L": "Left", "R": "Right"}
+
 
 def convert_acronym_to_words(label):
     label = label.strip()
 
     # save original label in case label is not matched
-    original_label = label 
+    original_label = label
     words = []
-    
-    # add logic for left and right 
+
+    # add logic for left and right
     if label and label[0] in map_hemi:
         words.append(map_hemi[label[0]])
         label = label[1:]
@@ -84,11 +82,11 @@ def convert_acronym_to_words(label):
 
     while i < len(label):
         matched = False
-        
+
         # greedy approach due to "SMA" being out of pattern
         # looks at a combination of 3 letters first, then 2, then 1
         for j in range(3, 0, -1):
-            part = label[i:i+j]
+            part = label[i : i + j]
             if part in map_acronyms:
                 words.append(map_acronyms[part])
                 i += j
@@ -97,7 +95,3 @@ def convert_acronym_to_words(label):
         if not matched:
             return original_label
     return " ".join(words)
-
-
-
-

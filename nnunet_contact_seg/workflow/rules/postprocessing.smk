@@ -1,5 +1,5 @@
 rule register_contacts:
-    input: 
+    input:
         in_im=bids(
             root=config["output_dir"],
             suffix="dseg.nii.gz",
@@ -7,7 +7,7 @@ rule register_contacts:
             datatype="contact_seg",
             **inputs["post_ct"].wildcards,
         ),
-        transform_matrix=get_reg_matrix()
+        transform_matrix=get_reg_matrix(),
     output:
         out_im=bids(
             root=config["output_dir"],
@@ -16,12 +16,13 @@ rule register_contacts:
             space="T1w",
             desc="contacts_nnUNet",
             **inputs["post_ct"].wildcards,
-        )
+        ),
     script:
-        '../scripts/apply_contact_registration.py'
+        "../scripts/apply_contact_registration.py"
+
 
 rule contacts_qc:
-    input: 
+    input:
         ct_img=get_registered_ct_image(),
         t1w_img=bids(
             root=config["output_dir"],
@@ -42,15 +43,16 @@ rule contacts_qc:
             suffix="actual",
             extension=".fcsv",
             **inputs["post_ct"].wildcards,
-         ),
+        ),
     params:
-        exclude_label_map=config["exclude_label_map"]
-    output: 
+        exclude_label_map=config["exclude_label_map"],
+    output:
         html=bids(
             root=config["output_dir"],
             datatype="qc",
             desc="contacts_qc",
             suffix="contacts.html",
             **inputs["post_ct"].wildcards,
-        )
-    script: '../scripts/contacts_qc.py'
+        ),
+    script:
+        "../scripts/contacts_qc.py"

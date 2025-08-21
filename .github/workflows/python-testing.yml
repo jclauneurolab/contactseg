@@ -63,6 +63,6 @@ jobs:
         run: |
           echo "nnUNet_SEEG_CACHE_DIR=`pwd`/tests/data/nnunet_seeg_cache_dir" >> $GITHUB_ENV
 
-      - name: Test single T2w bids
+      - name: Test single subject bids
         run: |
           uv run nnunet_contact_seg tests/data/ test_out participant -np --label --transform
