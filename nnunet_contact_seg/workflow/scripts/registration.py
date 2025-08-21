@@ -82,6 +82,15 @@ def registration(fixed_image, moving_image, xfm_ras, xfm_slicer, out_im):
     moving_image = ants.image_read(moving_image)
 
     # Perform registration
+    # registration_result = ants.registration(
+    #     fixed=fixed_image,
+    #     moving=moving_image,
+    #     type_of_transform="Rigid",
+    #     gradient_step=0.1,
+    #     aff_iterations=(1000, 500, 250, 100),
+    #     aff_shrink_factors=(8, 4, 2, 1),
+    # )
+
     registration_result = ants.registration(
         fixed=fixed_image,
         moving=moving_image,
@@ -89,6 +98,11 @@ def registration(fixed_image, moving_image, xfm_ras, xfm_slicer, out_im):
         gradient_step=0.1,
         aff_iterations=(1000, 500, 250, 100),
         aff_shrink_factors=(8, 4, 2, 1),
+        aff_smoothing_sigmas = (3, 2, 1, 0),
+        aff_metric = 'MI',
+        aff_sampling = '32',
+        aff_random_sampling_rate = 0.25
+
     )
 
     # Get the registered (warped) moving image
