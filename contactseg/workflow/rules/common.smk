@@ -76,6 +76,17 @@ def get_final_output():
                 )
             )
         )
+        final.extend(
+            inputs["post_ct"].expand(
+                bids(
+                    root=config["output_dir"],
+                    space = "T1w",
+                    desc="contacts_nnUNet",                    
+                    suffix="dseg.nii.gz",
+                    **inputs["post_ct"].wildcards,
+                )
+            )
+        )
     if config["contacts_qc"]:
         final.extend(
             inputs["post_ct"].expand(
