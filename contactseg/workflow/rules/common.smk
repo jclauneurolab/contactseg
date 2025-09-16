@@ -3,7 +3,7 @@ def get_reg_matrix():
         return bids(
             root=config["output_dir"],
             datatype="registration",
-            space="T1w",
+            desc="from_ct-to_T1w",
             suffix="xfm.txt",
             **inputs["post_ct"].wildcards,
         )
@@ -20,23 +20,24 @@ def get_registered_ct_image():
         return (
             bids(
                 root=config["output_dir"],
-                datatype="registration",
+                datatype="anat",
+                session = "post",
                 space="T1w",
                 suffix="ct.nii.gz",
                 **inputs["post_ct"].wildcards,
             ),
         )
+
     else:
         return bids(
-            root=config["bids_dir"],
-            suffix="ct",
-            datatype="ct",
-            session="post",
-            acq="Electrode",
-            extension=".nii.gz",
+            root=config["output_dir"],
+            datatype="anat",
+            session = "post",
+            space="T1w",
+            desc = 'user_registration',
+            suffix="ct.nii.gz",
             **inputs["post_ct"].wildcards,
         )
-
 
 def get_final_output():
     final = []
@@ -45,8 +46,6 @@ def get_final_output():
             bids(
                 root=config["output_dir"],
                 suffix="dseg.nii.gz",
-                datatype="contact_seg",
-                space="T1w",
                 desc="contacts_nnUNet",
                 **inputs["post_ct"].wildcards,
             )
@@ -57,9 +56,12 @@ def get_final_output():
             inputs["post_ct"].expand(
                 bids(
                     root=config["output_dir"],
-                    datatype="coords",
-                    suffix="labelled_nnUNet.fcsv",
-                    **inputs["post_ct"].wildcards,
+                    datatype="ieeg",
+                    space = "T1w",
+                    suffix = "electrodes",
+                    session="post",
+                    extension=".tsv",
+                    **inputs["post_ct"].wildcards
                 )
             )
         )
@@ -68,8 +70,8 @@ def get_final_output():
             inputs["post_ct"].expand(
                 bids(
                     root=config["output_dir"],
-                    datatype="coords",
-                    suffix="transformed_nnUNet.fcsv",
+                    datatype="slicer_fcsv",
+                    suffix="transformed_contactseg.fcsv",
                     **inputs["post_ct"].wildcards,
                 )
             )
@@ -80,8 +82,8 @@ def get_final_output():
                 bids(
                     root=config["output_dir"],
                     datatype="qc",
-                    desc="contacts_qc",
-                    suffix="contacts.html",
+                    desc="contactseg",
+                    suffix="qc.html",
                     **inputs["post_ct"].wildcards,
                 )
             )

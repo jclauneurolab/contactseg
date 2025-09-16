@@ -165,8 +165,11 @@ def assign_contacts_to_electrodes(electrodes, contacts, max_distance_threshold=4
             target_point = electrode["target_point"]
             entry_point = electrode["entry_point"]
             elec_vector = target_point - entry_point
+            mag = np.sqrt(elec_vector.dot(elec_vector))
 
-            distance = calculate_distance_to_line(contact, entry_point, elec_vector)
+            new_vec = ((mag+2)/mag)*elec_vector
+
+            distance = calculate_distance_to_line(contact, entry_point, new_vec)
             if (
                 distance
                 and distance <= max_distance_threshold

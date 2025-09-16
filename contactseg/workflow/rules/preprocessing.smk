@@ -13,8 +13,9 @@ rule n4biascorr:
         corrected_t1w=bids(
             root=config["output_dir"],
             suffix="T1w",
-            desc="n4biascorr",
-            datatype="n4biascorr",
+            desc="n4",
+            datatype="anat",
+            session ="pre",
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
@@ -36,8 +37,9 @@ rule get_registration_matrix:
         fixed_t1w=bids(
             root=config["output_dir"],
             suffix="T1w",
-            desc="n4biascorr",
-            datatype="n4biascorr",
+            desc="n4",
+            datatype="anat",
+            session ="pre",
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
@@ -45,23 +47,59 @@ rule get_registration_matrix:
         xfm_slicer=bids(
             root=config["output_dir"],
             datatype="registration",
-            space="T1w",
+            desc="from_ct-to_T1w",
             suffix="slicer.mat",
             **inputs["post_ct"].wildcards,
         ),
         xfm_ras=bids(
             root=config["output_dir"],
             datatype="registration",
-            space="T1w",
+            desc="from_ct-to_T1w",
             suffix="xfm.txt",
             **inputs["post_ct"].wildcards,
         ),
         out_im=bids(
             root=config["output_dir"],
-            datatype="registration",
+            datatype="anat",
+            session = "post",
             space="T1w",
             suffix="ct.nii.gz",
             **inputs["post_ct"].wildcards,
         ),
     script:
         "../scripts/registration.py"
+
+if config['manual_reg_matrix']:
+    rule register_ct:
+        input:
+            in_im=bids(
+                root=config["bids_dir"],
+                suffix="ct",
+                datatype="ct",
+                session="post",
+                acq="Electrode",
+                extension=".nii.gz",
+                **inputs["post_ct"].wildcards,
+            ),
+            ref_im=bids(
+                root=config["output_dir"],
+                suffix="T1w",
+                desc="n4",
+                datatype="anat",
+                session ="pre",
+                extension=".nii.gz",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            transform_matrix=get_reg_matrix(),
+        output:
+            out_im = bids(
+                root=config["output_dir"],
+                datatype="anat",
+                session = "post",
+                desc = "user_registration",
+                space="T1w",
+                suffix="ct.nii.gz",
+                **inputs["post_ct"].wildcards,
+            ),
+        script:
+            "../scripts/apply_registration.py"
