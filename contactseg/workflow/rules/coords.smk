@@ -59,28 +59,27 @@ if config["label"]:
             "../scripts/label.py"
 
     rule gen_labelled_ieeg_electrodes:
-        input: 
-            fcsv = rules.label_coords.output.labelled_coords,
-            ref_ct = get_registered_ct_image()
+        input:
+            fcsv=rules.label_coords.output.labelled_coords,
+            ref_ct=get_registered_ct_image(),
         output:
-            electrodes_tsv = bids(
+            electrodes_tsv=bids(
                 root=config["output_dir"],
                 datatype="ieeg",
-                space = "T1w",
-                suffix = "electrodes",
+                space="T1w",
+                suffix="electrodes",
                 session="post",
                 extension=".tsv",
-                **inputs["post_ct"].wildcards
+                **inputs["post_ct"].wildcards,
             ),
-            coordsystem_json = bids(
+            coordsystem_json=bids(
                 root=config["output_dir"],
                 datatype="ieeg",
-                space = "T1w",
-                suffix = "coordsystem",
+                space="T1w",
+                suffix="coordsystem",
                 session="post",
                 extension=".json",
-                **inputs["post_ct"].wildcards
-            )
+                **inputs["post_ct"].wildcards,
+            ),
         script:
             "../scripts/generate_tsv.py"
-

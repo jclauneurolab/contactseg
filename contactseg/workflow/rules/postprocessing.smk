@@ -11,7 +11,7 @@ rule register_contacts:
             suffix="T1w",
             desc="n4",
             datatype="anat",
-            session = "pre",
+            session="pre",
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
@@ -51,8 +51,7 @@ rule contacts_qc:
             suffix="planned",
             extension=".fcsv",
             **inputs["post_ct"].wildcards,
-        )
-
+        ),
     output:
         html=bids(
             root=config["output_dir"],

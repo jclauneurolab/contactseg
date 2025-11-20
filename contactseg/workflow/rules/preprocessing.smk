@@ -15,7 +15,7 @@ rule n4biascorr:
             suffix="T1w",
             desc="n4",
             datatype="anat",
-            session ="pre",
+            session="pre",
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
@@ -39,7 +39,7 @@ rule get_registration_matrix:
             suffix="T1w",
             desc="n4",
             datatype="anat",
-            session ="pre",
+            session="pre",
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
@@ -61,7 +61,7 @@ rule get_registration_matrix:
         out_im=bids(
             root=config["output_dir"],
             datatype="anat",
-            session = "post",
+            session="post",
             space="T1w",
             suffix="ct.nii.gz",
             **inputs["post_ct"].wildcards,
@@ -69,7 +69,9 @@ rule get_registration_matrix:
     script:
         "../scripts/registration.py"
 
-if config['manual_reg_matrix']:
+
+if config["manual_reg_matrix"]:
+
     rule register_ct:
         input:
             in_im=bids(
@@ -86,17 +88,17 @@ if config['manual_reg_matrix']:
                 suffix="T1w",
                 desc="n4",
                 datatype="anat",
-                session ="pre",
+                session="pre",
                 extension=".nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
             transform_matrix=get_reg_matrix(),
         output:
-            out_im = bids(
+            out_im=bids(
                 root=config["output_dir"],
                 datatype="anat",
-                session = "post",
-                desc = "user_registration",
+                session="post",
+                desc="user_registration",
                 space="T1w",
                 suffix="ct.nii.gz",
                 **inputs["post_ct"].wildcards,

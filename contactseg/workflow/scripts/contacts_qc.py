@@ -1,16 +1,17 @@
-import nibabel as nib
+import csv
+import io
 import re
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+import matplotlib.pyplot as plt
+import nibabel as nib
 import numpy as np
-import csv
+from label_map import convert_acronym_to_words
+from scipy.ndimage import map_coordinates
 from svgutils.compose import Unit
 from svgutils.transform import GroupElement, SVGFigure, fromstring
-from scipy.ndimage import map_coordinates
-import matplotlib.pyplot as plt
-import io
-from label_map import convert_acronym_to_words
 
 
 # reused from degad code

@@ -1,8 +1,9 @@
 import os
+
+import nibabel as nib
 import numpy as np
 import pandas as pd
 import skimage.measure
-import nibabel as nib
 
 
 def vox2world(vox_coords, img_aff):

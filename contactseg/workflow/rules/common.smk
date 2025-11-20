@@ -21,7 +21,7 @@ def get_registered_ct_image():
             bids(
                 root=config["output_dir"],
                 datatype="anat",
-                session = "post",
+                session="post",
                 space="T1w",
                 suffix="ct.nii.gz",
                 **inputs["post_ct"].wildcards,
@@ -32,12 +32,13 @@ def get_registered_ct_image():
         return bids(
             root=config["output_dir"],
             datatype="anat",
-            session = "post",
+            session="post",
             space="T1w",
-            desc = 'user_registration',
+            desc="user_registration",
             suffix="ct.nii.gz",
             **inputs["post_ct"].wildcards,
         )
+
 
 def get_final_output():
     final = []
@@ -57,11 +58,11 @@ def get_final_output():
                 bids(
                     root=config["output_dir"],
                     datatype="ieeg",
-                    space = "T1w",
-                    suffix = "electrodes",
+                    space="T1w",
+                    suffix="electrodes",
                     session="post",
                     extension=".tsv",
-                    **inputs["post_ct"].wildcards
+                    **inputs["post_ct"].wildcards,
                 )
             )
         )
@@ -80,8 +81,8 @@ def get_final_output():
             inputs["post_ct"].expand(
                 bids(
                     root=config["output_dir"],
-                    space = "T1w",
-                    desc="contacts_nnUNet",                    
+                    space="T1w",
+                    desc="contacts_nnUNet",
                     suffix="dseg.nii.gz",
                     **inputs["post_ct"].wildcards,
                 )
