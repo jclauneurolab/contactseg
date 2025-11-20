@@ -127,12 +127,11 @@ def clean_svgs(bg1_svgs_strs, bg2_svgs_strs, ref=0):
 
 
 # dictionary with entry and exit coord for each label
-# from the actual fcsv file
-def find_entry_exit(contact_fcsv_actual_path):
+def find_entry_exit(contact_fcsv_planned_path):
 
     # {label: (x,y,z), (x,y,z) }
     entry_exit_dict = {}
-    with open(contact_fcsv_actual_path, "r") as f:
+    with open(contact_fcsv_planned_path, "r") as f:
         reader = csv.reader(f)
         for row in reader:
             if not row or row[0].startswith("#"):
@@ -387,9 +386,9 @@ def render_plane_slice_to_svg(img, middle_point, points, axis, **args):
 def output_html_file(
     ct_img_path,
     t1w_img_path,
-    contact_fcsv_actual_path,
+    contact_fcsv_planned_path,
     contact_fcsv_labelled_path,
-    exclude_label_map,
+    # exclude_label_map,
     output_html,
 ):
 
@@ -397,7 +396,7 @@ def output_html_file(
     ct_img = nib.load(str(ct_img_path))
     ct_img = nib.as_closest_canonical(ct_img)
 
-    match = re.search(r"(sub-P\d+)", str(ct_img_path))
+    match = re.search(r"(sub-\w+)", str(ct_img_path))
     if match:
         subject_id = match.group(1)
 
@@ -406,7 +405,7 @@ def output_html_file(
     t1w_img = nib.as_closest_canonical(t1w_img)
 
     # get coordinate dictionaries for plotting
-    entry_exit = find_entry_exit(contact_fcsv_actual_path)
+    entry_exit = find_entry_exit(contact_fcsv_planned_path)
     contacts = group_contacts(contact_fcsv_labelled_path)
 
     html_parts = []
@@ -466,10 +465,11 @@ def output_html_file(
         final_svg_oblique = "\n".join(clean_svgs([svg_oblique_ct], [svg_oblique_t1w]))
 
         # in exclude_label_map is included, do not use map label code
-        if exclude_label_map == True:
-            label_long = label
-        else:
-            label_long = convert_acronym_to_words(label)
+        # if exclude_label_map == True:
+        #     label_long = label
+        # else:
+        #     label_long = convert_acronym_to_words(label)
+        label_long = convert_acronym_to_words(label)
 
         html_parts.append(
             f"""
@@ -595,16 +595,14 @@ def output_html_file(
 if __name__ == "__main__":
     ct_img_path = snakemake.input["ct_img"]
     t1w_img_path = snakemake.input["t1w_img"]
-    contact_fcsv_actual_path = snakemake.input["contact_fcsv_actual"]
+    planned_path = snakemake.input["planned_fcsv"]
     contact_fcsv_labelled_path = snakemake.input["contact_fcsv_labelled"]
-    exclude_label_map = snakemake.params["exclude_label_map"]
     output_html = snakemake.output["html"]
 
     output_html_file(
         ct_img_path,
         t1w_img_path,
-        contact_fcsv_actual_path,
+        planned_path,
         contact_fcsv_labelled_path,
-        exclude_label_map,
         output_html,
     )

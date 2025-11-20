@@ -4,21 +4,28 @@ rule register_contacts:
             root=config["output_dir"],
             suffix="dseg.nii.gz",
             desc="contacts_nnUNet",
-            datatype="contact_seg",
             **inputs["post_ct"].wildcards,
+        ),
+        ref_im=bids(
+            root=config["output_dir"],
+            suffix="T1w",
+            desc="n4",
+            datatype="anat",
+            session = "pre",
+            extension=".nii.gz",
+            **inputs["pre_t1w"].wildcards,
         ),
         transform_matrix=get_reg_matrix(),
     output:
         out_im=bids(
             root=config["output_dir"],
             suffix="dseg.nii.gz",
-            datatype="contact_seg",
             space="T1w",
             desc="contacts_nnUNet",
             **inputs["post_ct"].wildcards,
         ),
     script:
-        "../scripts/apply_contact_registration.py"
+        "../scripts/apply_registration.py"
 
 
 rule contacts_qc:
@@ -27,31 +34,31 @@ rule contacts_qc:
         t1w_img=bids(
             root=config["output_dir"],
             suffix="T1w",
-            desc="n4biascorr",
-            datatype="n4biascorr",
+            desc="n4",
+            datatype="anat",
+            session="pre",
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
         contact_fcsv_labelled=bids(
             root=config["output_dir"],
-            datatype="coords",
-            suffix="labelled_nnUNet.fcsv",
+            datatype="slicer_fcsv",
+            suffix="labelled_contactseg.fcsv",
             **inputs["post_ct"].wildcards,
         ),
-        contact_fcsv_actual=bids(
+        planned_fcsv=bids(
             root=config["bids_dir"],
-            suffix="actual",
+            suffix="planned",
             extension=".fcsv",
             **inputs["post_ct"].wildcards,
-        ),
-    params:
-        exclude_label_map=config["exclude_label_map"],
+        )
+
     output:
         html=bids(
             root=config["output_dir"],
             datatype="qc",
-            desc="contacts_qc",
-            suffix="contacts.html",
+            desc="contactseg",
+            suffix="qc.html",
             **inputs["post_ct"].wildcards,
         ),
     script:

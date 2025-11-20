@@ -56,14 +56,13 @@ rule model_inference:
             root=config["output_dir"],
             suffix="dseg.nii.gz",
             desc="contacts_nnUNet",
-            datatype="contact_seg",
             **inputs["post_ct"].wildcards,
         ),
     log:
         bids(root="logs", suffix="nnUNet.txt", **inputs["post_ct"].wildcards),
     shadow:
         "minimal"
-    threads: 16
+    threads: 4
     resources:
         gpus=1 if config["use_gpu"] else 0,
         mem_mb=16000,

@@ -4,8 +4,8 @@ rule get_coords:
     output:
         model_coords=bids(
             root=config["output_dir"],
-            suffix="nnUNet.fcsv",
-            datatype="coords",
+            suffix="contactseg.fcsv",
+            datatype="slicer_fcsv",
             **inputs["post_ct"].wildcards,
         ),
     group:
@@ -23,8 +23,8 @@ if config["transform"]:
         output:
             transformed_coords=bids(
                 root=config["output_dir"],
-                suffix="transformed_nnUNet.fcsv",
-                datatype="coords",
+                suffix="transformed_contactseg.fcsv",
+                datatype="slicer_fcsv",
                 **inputs["post_ct"].wildcards,
             ),
         group:
@@ -47,8 +47,8 @@ if config["label"]:
         output:
             labelled_coords=bids(
                 root=config["output_dir"],
-                suffix="labelled_nnUNet.fcsv",
-                datatype="coords",
+                suffix="labelled_contactseg.fcsv",
+                datatype="slicer_fcsv",
                 **inputs["post_ct"].wildcards,
             ),
         params:
@@ -57,3 +57,30 @@ if config["label"]:
             "subj"
         script:
             "../scripts/label.py"
+
+    rule gen_labelled_ieeg_electrodes:
+        input: 
+            fcsv = rules.label_coords.output.labelled_coords,
+            ref_ct = get_registered_ct_image()
+        output:
+            electrodes_tsv = bids(
+                root=config["output_dir"],
+                datatype="ieeg",
+                space = "T1w",
+                suffix = "electrodes",
+                session="post",
+                extension=".tsv",
+                **inputs["post_ct"].wildcards
+            ),
+            coordsystem_json = bids(
+                root=config["output_dir"],
+                datatype="ieeg",
+                space = "T1w",
+                suffix = "coordsystem",
+                session="post",
+                extension=".json",
+                **inputs["post_ct"].wildcards
+            )
+        script:
+            "../scripts/generate_tsv.py"
+
