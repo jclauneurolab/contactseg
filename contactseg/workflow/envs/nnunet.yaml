@@ -3,10 +3,6 @@ name: nnunet-gpu
 channels: [pytorch, conda-forge, bioconda]
 dependencies:
   - python=3.10
-  - pytorch::pytorch
-  - pytorch::pytorch-cuda=11.8
-  - pytorch::torchvision
-  - pytorch::torchaudio
   - nibabel
   - numpy
   - scipy
