@@ -60,6 +60,8 @@ rule model_inference:
         ),
     log:
         bids(root="logs", suffix="nnUNet.txt", **inputs["post_ct"].wildcards),
+    conda:
+        "../envs/nnunet.yaml"
     shadow:
         "minimal"
     threads: 4

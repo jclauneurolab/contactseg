@@ -10,6 +10,8 @@ rule get_coords:
         ),
     group:
         "subj"
+    conda:
+        "../envs/analysis.yaml" 
     script:
         "../scripts/nnUNet_coords.py"
 
@@ -29,6 +31,8 @@ if config["transform"]:
             ),
         group:
             "subj"
+        conda: 
+            "../envs/analysis.yaml"
         script:
             "../scripts/transform_coords.py"
 
@@ -55,6 +59,8 @@ if config["label"]:
             electrode_type=str(Path(workflow.basedir).parent / config["electrode_type"]),
         group:
             "subj"
+        conda:
+            "../envs/analysis.yaml" 
         script:
             "../scripts/label.py"
 
@@ -81,5 +87,7 @@ if config["label"]:
                 extension=".json",
                 **inputs["post_ct"].wildcards,
             ),
+        conda:
+            "../envs/analysis.yaml"
         script:
             "../scripts/generate_tsv.py"
