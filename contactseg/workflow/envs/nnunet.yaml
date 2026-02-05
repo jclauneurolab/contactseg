@@ -1,12 +1,8 @@
 ---
 name: nnunet-gpu
-channels: [pytorch, conda-forge, bioconda]
+channels: [pytorch, conda-forge, defaults]
 dependencies:
   - python=3.10
-  - nibabel
-  - numpy
-  - scipy
-  - scikit-image
   - pip
   - pip:
       - nnunetv2>=2.5.1
