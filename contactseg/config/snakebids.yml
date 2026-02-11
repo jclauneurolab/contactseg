@@ -98,6 +98,10 @@ parse_args:
     help: 'Exludes the label mapping code for the qc plots only displaying the acronyms (default: %(default)s)'
     default: False
     action: 'store_true' 
+  --non_interpolated:
+    help: 'Do not resample images during registration (default: %(default)s)'
+    default: False
+    action: 'store_true'
 
 
 containers: {}
