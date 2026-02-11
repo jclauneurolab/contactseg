@@ -148,5 +148,5 @@ registration(
     xfm_ras=snakemake.output.xfm_ras,
     xfm_slicer=snakemake.output.xfm_slicer,
     out_im=snakemake.output.out_im,
-    non_interpolated=snakemake.params.non_interpolated
+    non_interpolated=bool(snakemake.params.get("non_interpolated", False))
 )
