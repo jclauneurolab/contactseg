@@ -58,7 +58,9 @@ def antsmat2mat(transform, m_center):
     return ras_inmatrix
 
 
-def registration(fixed_image, moving_image, xfm_ras, xfm_slicer, out_im, non_interpolated=False):
+def registration(
+    fixed_image, moving_image, xfm_ras, xfm_slicer, out_im, non_interpolated=False
+):
     """
     Function that performs registration.
 
@@ -78,7 +80,7 @@ def registration(fixed_image, moving_image, xfm_ras, xfm_slicer, out_im, non_int
     None
     """
 
-    #Store original path for non-interpolated mode
+    # Store original path for non-interpolated mode
     moving_image_path = moving_image
 
     # Load images
@@ -118,14 +120,14 @@ def registration(fixed_image, moving_image, xfm_ras, xfm_slicer, out_im, non_int
     transform = ants.read_transform(transformation_file_path)
     full_matrix = antsmat2mat(transform.parameters, transform.fixed_parameters)
 
-    #Choose how to save the output image
+    # Choose how to save the output image
     if non_interpolated:
         float_img = nib.load(moving_image_path)
         new_affine = np.dot(full_matrix, float_img.affine)
 
-        float_img_trans = nib.Nifti1Image(float_img.get_fdata(), 
-                                          affine=new_affine,
-                                          header=float_img.header)
+        float_img_trans = nib.Nifti1Image(
+            float_img.get_fdata(), affine=new_affine, header=float_img.header
+        )
         float_img_trans.set_qform(float_img_trans.affine, code=1)
         nib.save(float_img_trans, out_im)
 
@@ -148,5 +150,5 @@ registration(
     xfm_ras=snakemake.output.xfm_ras,
     xfm_slicer=snakemake.output.xfm_slicer,
     out_im=snakemake.output.out_im,
-    non_interpolated=bool(snakemake.params.get("non_interpolated", False))
+    non_interpolated=bool(snakemake.params.get("non_interpolated", False)),
 )
