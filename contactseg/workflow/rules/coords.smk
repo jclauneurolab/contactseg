@@ -11,7 +11,7 @@ rule get_coords:
     group:
         "subj"
     conda:
-        "../envs/analysis.yaml" 
+        "../envs/analysis.yaml"
     script:
         "../scripts/nnUNet_coords.py"
 
@@ -31,7 +31,7 @@ if config["transform"]:
             ),
         group:
             "subj"
-        conda: 
+        conda:
             "../envs/analysis.yaml"
         script:
             "../scripts/transform_coords.py"
@@ -60,7 +60,7 @@ if config["label"]:
         group:
             "subj"
         conda:
-            "../envs/analysis.yaml" 
+            "../envs/analysis.yaml"
         script:
             "../scripts/label.py"
 
