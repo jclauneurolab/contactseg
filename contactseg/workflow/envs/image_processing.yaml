@@ -1,8 +1,8 @@
 ---
 name: image-proc
-channels: [conda-forge, defaults]
+channels: [khanlab, conda-forge, defaults]
 dependencies:
   - python=3.10
-  - numpy #apply_registration, registration
-  - ants #apply_registration, n4_bias, registration
+  - numpy
+  - antspyx>=0.5.4
 

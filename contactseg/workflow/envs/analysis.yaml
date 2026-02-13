@@ -3,10 +3,10 @@ name: analysis
 channels: [conda-forge, bioconda, defaults]
 dependencies:
   - python=3.10
-  - pandas # nnUNet, transform_coords, label, generate_tsv
-  - numpy # nnUNet, transform_coords, label, contacts_qc
-  - scipy #contacts_qc
-  - scikit-image # nnUNet
-  - matplotlib #contacts_qc
-  - svgutils #contacts_qc
-  - nibabel # nnUNet, contacts_qc
+  - pandas
+  - numpy
+  - scipy
+  - scikit-image
+  - matplotlib
+  - svgutils
+  - nibabel
