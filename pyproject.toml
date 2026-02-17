@@ -6,12 +6,7 @@ readme = "README.md"
 license = "MIT"
 authors = [{ name = "Arun Thurairajah", email = "a.thurairajah1@gmail.com" }]
 requires-python = ">=3.10,<4.0"
-dependencies = [
-    "snakebids==0.14.0",
-    "appdirs>=1.4.4",
-    "pulp<2.8.0; python_version<'3.11'",
-    "pyvista>=0.44.2",
-]
+dependencies = []
 
 [project.optional-dependencies]
 dev = [
@@ -38,3 +33,43 @@ where = ["."]
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.pixi.workspace]
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64"]
+
+[tool.pixi.pypi-dependencies]
+contactseg = { path = ".", editable = true }
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
+
+[tool.pixi.tasks]
+
+[tool.pixi.dependencies]
+python = ">=3.10,<4.0"
+snakebids = "==0.14.0"
+appdirs = ">=1.4.4"
+pulp = "<2.8.0"
+pyvista = ">=0.44.2"
+
+[tool.pixi.feature.dev.dependencies]
+flake8 = ">=4.0.1"
+pytest-console-scripts = ">=1.2.1"
+pytest = ">=6.2.5"
+black = ">=24.0.0"
+pylint = ">=2.11.1"
+isort = ">=5.10.1"
+poethepoet = ">=0.10.0"
+snakefmt = ">=0.10.0"
+pygraphviz = "==1.7"
+Jinja2 = ">=3.0.3"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.snakefmt]
+line_length = 79
+include = '\.smk$|^Snakefile'
