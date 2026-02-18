@@ -20,18 +20,20 @@ jobs:
           sudo apt-get install -y graphviz-dev
 
       - name: Setup Python environment
-        uses: ./.github/actions/action-setup_task-installPyProject
+        uses: prefix-dev/setup-pixi@v0.8.14
         with:
-          python-version: "3.9"
+          environments: >-
+            dev-only
+          activate-environment: dev-only
 
       - name: isort
-        run: uv run isort contactseg/*.py -c
+        run: isort contactseg/*.py -c
 
       - name: Black
-        run: uv run black contactseg --check
+        run: black contactseg --check
 
       - name: snakefmt
-        run: uv run snakefmt contactseg --check
+        run: snakefmt contactseg --check
 
   test:
     runs-on: ubuntu-latest
@@ -41,23 +43,13 @@ jobs:
         python-version: ["3.9","3.10","3.11","3.12"]
 
     steps:
-      - name: Install non-python dependencies
-        run: |
-          sudo apt-get install -y graphviz-dev
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup Python environments
-        uses: ./.github/actions/action-setup_task-installPyProject
+      - name: Setup Pixi environment
+        uses: prefix-dev/setup-pixi@v0.8.14
         with:
-          python-version: ${{ matrix.python-version }}
-          install-library: true
+          activate-environment: true
 
       - name: Setup env for contactseg
         run: |
@@ -65,4 +57,4 @@ jobs:
 
       - name: Test single subject bids
         run: |
-          uv run contactseg tests/data/ test_out participant -np --label --transform
+          pixi run contactseg tests/data/ test_out participant -np --label --transform
