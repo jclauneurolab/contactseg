@@ -10,12 +10,12 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    with:
-        ref: ${{ github.event.pull_request.head.sha || github.base_ref }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.base_ref }}
 
       - name: Setup Python environment
         uses: prefix-dev/setup-pixi@v0.8.14
