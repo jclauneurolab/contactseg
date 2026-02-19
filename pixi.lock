@@ -1618,18 +1618,7 @@ packages:
 - pypi: ./
   name: contactseg
   version: 0.1.0
-  sha256: 5202d96bb54b849430c5f5cfb89b96f74c9f66e42fe7938c648ee9e39e092a10
-  requires_dist:
-  - flake8>=4.0.1 ; extra == 'dev'
-  - pytest-console-scripts>=1.2.1 ; extra == 'dev'
-  - pytest>=6.2.5 ; extra == 'dev'
-  - black>=24.0.0 ; extra == 'dev'
-  - pylint>=2.11.1 ; extra == 'dev'
-  - isort>=5.10.1 ; extra == 'dev'
-  - poethepoet>=0.10.0 ; extra == 'dev'
-  - snakefmt>=0.10.0 ; extra == 'dev'
-  - pygraphviz==1.7 ; extra == 'dev'
-  - jinja2>=3.0.3 ; extra == 'dev'
+  sha256: c3c052e211a01fc7f9cc9f75a0ec97248721000a799638cf0277bc3bfcf091b3
   requires_python: '>=3.10,<4.0'
 - conda: https://conda.anaconda.org/conda-forge/linux-64/contourpy-1.3.2-py310h3788b33_0.conda
   sha256: 5231c1b68e01a9bc9debabc077a6fb48c4395206d59f40a4598d1d5e353e11d8

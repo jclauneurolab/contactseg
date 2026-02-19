@@ -13,18 +13,6 @@ On Windows, run:
 powershell -ExecutionPolicy Bypass -c "irm -useb https://pixi.sh/install.ps1 | iex"
 ```
 
-Alternatively, you can install it from PyPI using:
-
-```
-pip install pixi
-```
-
-or with pipx:
-
-```
-pipx install pixi
-```
-
 Once pixi is installed, setup the environment:
 
 ```
@@ -34,10 +22,11 @@ pixi install
 To verify that the installation was successful, run:
 
 ```
-pixi run contactseg --help
+pixi run contactseg -h
 ```
 
-This should display the help message for the CLI. 
+You should see a help message listing all available command-line options.  
+If this runs successfully, you’re ready to use contactseg!
 
 To use the BIDS App, run:
 
