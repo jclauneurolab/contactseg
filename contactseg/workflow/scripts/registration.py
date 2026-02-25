@@ -130,25 +130,18 @@ def registration(
         )
         float_img_trans.set_qform(float_img_trans.affine, code=1)
         nib.save(float_img_trans, out_im)
-        ants.write_transform(transform, xfm_slicer)
-
-        # Save the 4x4 transformation matrix to a file
-        with open(xfm_ras, "w", newline="") as file:
-            writer = csv.writer(file, delimiter=" ")
-            for row in full_matrix:
-                writer.writerow(row)
-        return
 
     else:
         # Save the registered image with interpolation
         ants.image_write(registered_image, out_im)
-        ants.write_transform(transform, xfm_slicer)
 
-        # Save the 4x4 transformation matrix to a file
-        with open(xfm_ras, "w", newline="") as file:
-            writer = csv.writer(file, delimiter=" ")
-            for row in full_matrix:
-                writer.writerow(row)
+    ants.write_transform(transform, xfm_slicer)
+
+    # Save the 4x4 transformation matrix to a file
+    with open(xfm_ras, "w", newline="") as file:
+        writer = csv.writer(file, delimiter=" ")
+        for row in full_matrix:
+            writer.writerow(row)
 
 
 registration(
