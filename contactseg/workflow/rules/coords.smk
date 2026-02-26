@@ -96,6 +96,7 @@ if config["atlas_labels"]:
                     suffix="transformed_contactseg_mni.fcsv",
                     **inputs["post_ct"].wildcards,
                 ),
+                atlas_mni = "/local/scratch/contactseg/resources/atlases/atlas_subcortical.nii.gz",
             output:
                 labelled_coords=bids(
                     root=config["output_dir"],
