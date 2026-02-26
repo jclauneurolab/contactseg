@@ -100,4 +100,15 @@ def get_final_output():
                 )
             )
         )
+    if config["atlas_labels"]:
+        final.extend(
+            inputs["post_ct"].expand(
+                bids(
+                    root=config["output_dir"],
+                    datatype="slicer_fcsv",
+                    suffix="labelled_contactseg_mni.fcsv",
+                    **inputs["post_ct"].wildcards,
+                )
+            )
+        )
     return final

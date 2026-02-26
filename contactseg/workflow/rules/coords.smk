@@ -44,6 +44,8 @@ if config["label"]:
                 extension=".fcsv",
                 **inputs["post_ct"].wildcards,
             ),
+            atlas_in_t1=rules.warp_mni_to_t1.output.atlas_in_t1,  
+            atlas_labels="/local/scratch/contactseg/resources/atlases/atlas_subcortical.xml"
         output:
             labelled_coords=bids(
                 root=config["output_dir"],
@@ -83,3 +85,23 @@ if config["label"]:
             ),
         script:
             "../scripts/generate_tsv.py"
+
+if config["atlas_labels"]:
+
+    rule atlas_label_coords:
+            input:
+                coords=bids(
+                    root=config["output_dir"],
+                    datatype="slicer_fcsv",
+                    suffix="transformed_contactseg_mni.fcsv",
+                    **inputs["post_ct"].wildcards,
+                ),
+            output:
+                labelled_coords=bids(
+                    root=config["output_dir"],
+                    suffix="labelled_contactseg_mni.fcsv",
+                    datatype="slicer_fcsv",
+                    **inputs["post_ct"].wildcards,
+                ),
+            script:
+                "../scripts/atlas_label.py"

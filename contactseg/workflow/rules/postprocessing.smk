@@ -74,12 +74,12 @@ rule nonlinear_t1_to_mni:
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
-        mni_template="resources/MNI152_template.nii.gz"
+        mni_template="/local/scratch/contactseg/resources/atlases/tpl-MNI152Lin_res-01_T1w.nii/tpl-MNI152Lin_space-MNI_res-01_T1w.nii"
     output:
         forward_warp=bids(
             root=config["output_dir"],
             desc="t1_to_mni",
-            suffix="1Warp.nii.gz",
+            suffix="Warp.nii.gz",
             datatype="anat",
             session="pre",
             **inputs["pre_t1w"].wildcards,
@@ -87,7 +87,7 @@ rule nonlinear_t1_to_mni:
         inverse_warp=bids(
             root=config["output_dir"],
             desc="mni_to_t1",
-            suffix="1InverseWarp.nii.gz",
+            suffix="InverseWarp.nii.gz",
             datatype="anat",
             session="pre",
             **inputs["pre_t1w"].wildcards,
@@ -95,7 +95,7 @@ rule nonlinear_t1_to_mni:
         affine=bids(
             root=config["output_dir"],
             desc="t1_to_mni",
-            suffix="0GenericAffine.mat",
+            suffix="Affine.mat",
             datatype="anat",
             session="pre",
             **inputs["pre_t1w"].wildcards,
@@ -103,9 +103,16 @@ rule nonlinear_t1_to_mni:
     script:
         "../scripts/nonlinear_registration.py"
 
-rule warp_mni_to_t1:
+rule warp_contacts_to_mni:
     input:
-        atlas_img="resources/atlas_subcortical.nii.gz",
+        contacts_t1=bids(
+            root=config["output_dir"],
+            suffix="transformed_contactseg.fcsv",
+            datatype="slicer_fcsv",
+            **inputs["post_ct"].wildcards,
+        ),
+        forward_warp=rules.nonlinear_t1_to_mni.output.forward_warp,
+        affine=rules.nonlinear_t1_to_mni.output.affine,
         t1_img=bids(
             root=config["output_dir"],
             suffix="T1w",
@@ -115,31 +122,12 @@ rule warp_mni_to_t1:
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
-        inverse_warp=rules.nonlinear_t1_to_mni.output.inverse_warp,
-        affine=rules.nonlinear_t1_to_mni.output.affine,
     output:
-        atlas_in_t1=bids(
+        contacts_mni=bids(
             root=config["output_dir"],
-            desc="atlas",
-            suffix="atlas_subcortical_in_t1_space.nii.gz",
-            datatype="anat",
-            session="pre",
-            **inputs["pre_t1w"].wildcards,
-        ),
-    script:
-        "../scripts/warp_mni_to_t1.py"
-
-rule label_contacts_by_atlas:
-    input:
-        coords=rules.transform_coords.output.transformed_coords,  
-        atlas_in_t1=rules.warp_mni_to_t1.output.atlas_in_t1,
-        atlas_labels="resources/atlas_subcortical.xml",
-    output:
-        labelled_coords=bids(
-            root=config["output_dir"],
-            suffix="atlas_labelled_contactseg.fcsv",
             datatype="slicer_fcsv",
+            suffix="transformed_contactseg_mni.fcsv",
             **inputs["post_ct"].wildcards,
         ),
     script:
-        "../scripts/label_contacts_by_atlas.py"
+        "../scripts/warp_contacts_to_mni.py"
