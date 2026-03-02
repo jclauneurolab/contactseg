@@ -111,4 +111,17 @@ def get_final_output():
                 )
             )
         )
+    if config["affine_test"]:
+        final.extend(
+            inputs["pre_t1w"].expand(
+                bids(
+                    root=config["output_dir"],
+                    datatype="anat",
+                    session="pre",
+                    space="MNI",
+                    suffix="T1w.nii.gz",
+                    **inputs["pre_t1w"].wildcards,
+                )
+            )
+        )
     return final
