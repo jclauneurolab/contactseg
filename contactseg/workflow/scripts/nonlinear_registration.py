@@ -1,7 +1,7 @@
 import ants
 import shutil
 
-def nonlinear_registration(t1_img, mni_template, forward_warp, inverse_warp, affine):
+def nonlinear_registration(t1_img, mni_template, forward_warp, inverse_warp, affine_syn):
     fixed = ants.image_read(mni_template)
     moving = ants.image_read(t1_img)
 
@@ -14,7 +14,7 @@ def nonlinear_registration(t1_img, mni_template, forward_warp, inverse_warp, aff
     # reg["fwdtransforms"] and reg["invtransforms"] are lists of file paths
     shutil.copy(reg["fwdtransforms"][0], forward_warp)
     shutil.copy(reg["invtransforms"][0], inverse_warp)
-    shutil.copy(reg["fwdtransforms"][1], affine)
+    shutil.copy(reg["fwdtransforms"][1], affine_syn)
 
 if __name__ == "__main__":
     nonlinear_registration(
@@ -22,5 +22,5 @@ if __name__ == "__main__":
         mni_template=snakemake.input.mni_template,
         forward_warp=snakemake.output.forward_warp,
         inverse_warp=snakemake.output.inverse_warp,
-        affine=snakemake.output.affine,
+        affine_syn=snakemake.output.affine_syn,
     )

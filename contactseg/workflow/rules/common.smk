@@ -113,14 +113,12 @@ def get_final_output():
         )
     if config["affine_test"]:
         final.extend(
-            inputs["pre_t1w"].expand(
+            inputs["post_ct"].expand(
                 bids(
                     root=config["output_dir"],
-                    datatype="anat",
-                    session="pre",
-                    space="MNI",
-                    suffix="T1w.nii.gz",
-                    **inputs["pre_t1w"].wildcards,
+                    datatype="slicer_fcsv",
+                    suffix="mni_transformed_contactseg.fcsv",
+                    **inputs["post_ct"].wildcards,
                 )
             )
         )

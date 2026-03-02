@@ -74,7 +74,7 @@ rule nonlinear_t1_to_mni:
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
-        mni_template="/local/scratch/contactseg/resources/atlases/tpl-MNI152Lin_res-01_T1w.nii/tpl-MNI152Lin_space-MNI_res-01_T1w.nii"
+        mni_template="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz"
     output:
         forward_warp=bids(
             root=config["output_dir"],
@@ -92,7 +92,7 @@ rule nonlinear_t1_to_mni:
             session="pre",
             **inputs["pre_t1w"].wildcards,
         ),
-        affine=bids(
+        affine_syn=bids(
             root=config["output_dir"],
             desc="t1_to_mni",
             suffix="Affine.mat",
@@ -103,31 +103,44 @@ rule nonlinear_t1_to_mni:
     script:
         "../scripts/nonlinear_registration.py"
 
-rule warp_contacts_to_mni:
+
+rule apply_full_transformation:
     input:
-        contacts_t1=bids(
-            root=config["output_dir"],
-            suffix="transformed_contactseg.fcsv",
-            datatype="slicer_fcsv",
-            **inputs["post_ct"].wildcards,
+        coords=bids(
+                root=config["output_dir"],
+                suffix="transformed_contactseg.fcsv",
+                datatype="slicer_fcsv",
+                **inputs["post_ct"].wildcards,
         ),
-        forward_warp=rules.nonlinear_t1_to_mni.output.forward_warp,
-        affine=rules.nonlinear_t1_to_mni.output.affine,
-        t1_img=bids(
+        forward_warp=bids(
             root=config["output_dir"],
-            suffix="T1w",
-            desc="n4",
+            desc="t1_to_mni",
+            suffix="Warp.nii.gz",
             datatype="anat",
             session="pre",
-            extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
-    output:
-        contacts_mni=bids(
+        affine_syn=bids(
             root=config["output_dir"],
+            desc="t1_to_mni",
+            suffix="Affine.mat",
+            datatype="anat",
+            session="pre",
+            **inputs["pre_t1w"].wildcards,
+        ),
+        affine=bids(
+            root=config["output_dir"],
+            datatype="registration",
+            desc="from_T1w-to-MNI",
+            suffix="slicer.mat",
+            **inputs["pre_t1w"].wildcards,
+        )
+    output: 
+        output_coords=bids(
+            root=config["output_dir"],
+            suffix="mni_transformed_contactseg.fcsv",
             datatype="slicer_fcsv",
-            suffix="transformed_contactseg_mni.fcsv",
             **inputs["post_ct"].wildcards,
         ),
     script:
-        "../scripts/warp_contacts_to_mni.py"
+        "../scripts/apply_full_transformation.py"
