@@ -3,24 +3,27 @@ import ants
 
 def warp_contacts_to_mni(input_fcsv, output_fcsv, affine, affine_syn, forward_warp):
     contacts_df = pd.read_csv(input_fcsv, skiprows=3, header=None)
-    points_to_warp = pd.DataFrame(contacts_df[[1, 2, 3]].values, columns=['x', 'y', 'z'])
+    points = contacts_df[[1, 2, 3]].copy()
+    points.columns = ['x', 'y', 'z']
 
-    # Convert RAS to LPS for ANTs
-    points_to_warp['x'] *= -1
-    points_to_warp['y'] *= -1
+    # 1. Convert RAS to LPS
+    #points['x'] *= -1
+    #points['y'] *= -1
 
-    
+    # 2. Apply Transform
+    # Try whichtoinvert=[True] if [False] puts points in the wrong spot
     transformed_points = ants.apply_transforms_to_points(
         dim=3,
-        points=points_to_warp,
+        points=points,
         transformlist=[affine],
-        whichtoinvert=[False]          
+        whichtoinvert=[True] 
     )
 
-    # Convert LPS back to RAS for Slicer
-    transformed_points['x'] *= -1
-    transformed_points['y'] *= -1
+    # 3. Convert LPS back to RAS
+    #transformed_points['x'] *= -1
+    #transformed_points['y'] *= -1
 
+    # 4. Save and Compare
     contacts_df[1] = transformed_points['x'].values
     contacts_df[2] = transformed_points['y'].values
     contacts_df[3] = transformed_points['z'].values
