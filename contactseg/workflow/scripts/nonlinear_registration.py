@@ -1,9 +1,9 @@
 import ants
 import shutil
 
-def nonlinear_registration(t1_img, mni_template, forward_warp, inverse_warp, affine_syn):
+def nonlinear_registration(t1_in_mni_img, mni_template, forward_warp, inverse_warp, affine_syn):
     fixed = ants.image_read(mni_template)
-    moving = ants.image_read(t1_img)
+    moving = ants.image_read(t1_in_mni_img)
 
     reg = ants.registration(
         fixed=fixed,
@@ -18,7 +18,7 @@ def nonlinear_registration(t1_img, mni_template, forward_warp, inverse_warp, aff
 
 if __name__ == "__main__":
     nonlinear_registration(
-        t1_img=snakemake.input.t1_img,
+        t1_in_mni_img=snakemake.input.t1_in_mni_img,
         mni_template=snakemake.input.mni_template,
         forward_warp=snakemake.output.forward_warp,
         inverse_warp=snakemake.output.inverse_warp,

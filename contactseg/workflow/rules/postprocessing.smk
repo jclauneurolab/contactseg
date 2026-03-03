@@ -65,13 +65,12 @@ rule contacts_qc:
 
 rule nonlinear_t1_to_mni:
     input:
-        t1_img=bids(
+        t1_in_mni_img=bids(
             root=config["output_dir"],
-            suffix="T1w",
-            desc="n4",
             datatype="anat",
             session="pre",
-            extension=".nii.gz",
+            space="MNI",
+            suffix="T1w.nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
         mni_template="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz"

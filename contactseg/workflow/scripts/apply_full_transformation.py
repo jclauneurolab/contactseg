@@ -7,23 +7,22 @@ def warp_contacts_to_mni(input_fcsv, output_fcsv, affine, affine_syn, forward_wa
     points.columns = ['x', 'y', 'z']
 
     # 1. Convert RAS to LPS
-    #points['x'] *= -1
-    #points['y'] *= -1
+    points['x'] *= -1
+    points['y'] *= -1
 
     # 2. Apply Transform
-    # Try whichtoinvert=[True] if [False] puts points in the wrong spot
     transformed_points = ants.apply_transforms_to_points(
         dim=3,
         points=points,
-        transformlist=[affine],
-        whichtoinvert=[True] 
+        transformlist=[forward_warp, affine_syn, affine],
+        whichtoinvert=[False, True, True] 
     )
 
     # 3. Convert LPS back to RAS
-    #transformed_points['x'] *= -1
-    #transformed_points['y'] *= -1
+    transformed_points['x'] *= -1
+    transformed_points['y'] *= -1
 
-    # 4. Save and Compare
+    # 4. Save
     contacts_df[1] = transformed_points['x'].values
     contacts_df[2] = transformed_points['y'].values
     contacts_df[3] = transformed_points['z'].values
