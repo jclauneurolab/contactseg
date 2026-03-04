@@ -107,7 +107,7 @@ rule apply_full_transformation:
     input:
         coords=bids(
                 root=config["output_dir"],
-                suffix="transformed_contactseg.fcsv",
+                suffix="labelled_contactseg.fcsv",
                 datatype="slicer_fcsv",
                 **inputs["post_ct"].wildcards,
         ),
@@ -143,3 +143,42 @@ rule apply_full_transformation:
         ),
     script:
         "../scripts/apply_full_transformation.py"
+
+
+rule transform_atlas_to_t1:
+    input:
+        atlas_image="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii",  
+        t1_image=bids(
+            root=config["output_dir"],
+            suffix="T1w",
+            desc="n4",
+            datatype="anat",
+            session="pre",
+            extension=".nii.gz",
+            **inputs["pre_t1w"].wildcards,
+        ),
+        inverse_warp=bids(
+            root=config["output_dir"],
+            desc="mni_to_t1",
+            suffix="InverseWarp.nii.gz",
+            datatype="anat",
+            session="pre",
+            **inputs["pre_t1w"].wildcards,
+        ),
+        affine=bids(
+            root=config["output_dir"],
+            datatype="registration",
+            desc="from_T1w-to-MNI",
+            suffix="slicer.mat",
+            **inputs["pre_t1w"].wildcards,
+        ),
+    output:
+        atlas_in_t1=bids(
+            root=config["output_dir"],
+            suffix="atlas_in_t1_space.nii.gz",
+            datatype="anat",
+            session="post",
+            **inputs["post_ct"].wildcards,
+        ),
+    script:
+        "../scripts/transform_atlas_to_t1.py"

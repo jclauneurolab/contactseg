@@ -44,8 +44,6 @@ if config["label"]:
                 extension=".fcsv",
                 **inputs["post_ct"].wildcards,
             ),
-            atlas_in_t1=rules.warp_mni_to_t1.output.atlas_in_t1,  
-            atlas_labels="/local/scratch/contactseg/resources/atlases/atlas_subcortical.xml"
         output:
             labelled_coords=bids(
                 root=config["output_dir"],
@@ -88,21 +86,26 @@ if config["label"]:
 
 if config["atlas_labels"]:
 
-    rule atlas_label_coords:
-            input:
-                coords=bids(
-                    root=config["output_dir"],
-                    datatype="slicer_fcsv",
-                    suffix="transformed_contactseg_mni.fcsv",
-                    **inputs["post_ct"].wildcards,
-                ),
-                atlas_mni = "/local/scratch/contactseg/resources/atlases/atlas_subcortical.nii.gz",
-            output:
-                labelled_coords=bids(
-                    root=config["output_dir"],
-                    suffix="labelled_contactseg_mni.fcsv",
-                    datatype="slicer_fcsv",
-                    **inputs["post_ct"].wildcards,
-                ),
-            script:
-                "../scripts/atlas_label.py"
+    rule lookup_atlas_labels:
+        input:
+            points=bids(  
+                root=config["output_dir"],
+                suffix="mni_transformed_contactseg.fcsv",
+                datatype="slicer_fcsv",
+                **inputs["post_ct"].wildcards,
+            ),
+            atlas_segmentation="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii",
+            atlas_labels="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_atlas-CerebA_dseg.tsv"
+        output:
+            labeled_points=bids(
+            root=config["output_dir"],
+            suffix="labelled_contactseg_mni.fcsv",
+            datatype="slicer_fcsv",
+            **inputs["post_ct"].wildcards,
+        ),
+        params:
+            fuzzy_dist=2
+        script:
+            "../scripts/lookup_atlas_labels.py"
+
+            

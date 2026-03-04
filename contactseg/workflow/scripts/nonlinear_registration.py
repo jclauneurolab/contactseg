@@ -13,9 +13,9 @@ def nonlinear_registration(t1_in_mni_img, mni_template, forward_warp, inverse_wa
 
     # reg["fwdtransforms"] and reg["invtransforms"] are lists of file paths
     shutil.copy(reg["fwdtransforms"][0], forward_warp)
-    shutil.copy(reg["invtransforms"][0], inverse_warp)
+    shutil.copy(reg["invtransforms"][1], inverse_warp)
     shutil.copy(reg["fwdtransforms"][1], affine_syn)
-
+   
 if __name__ == "__main__":
     nonlinear_registration(
         t1_in_mni_img=snakemake.input.t1_in_mni_img,
