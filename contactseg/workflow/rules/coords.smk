@@ -94,6 +94,12 @@ if config["atlas_labels"]:
                 datatype="slicer_fcsv",
                 **inputs["post_ct"].wildcards,
             ),
+            other_fcsv=bids(
+                root=config["output_dir"],
+                suffix="labelled_contactseg.fcsv",
+                datatype="slicer_fcsv",
+                **inputs["post_ct"].wildcards,
+            ),
             atlas_segmentation="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii",
             atlas_labels="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_atlas-CerebA_dseg.tsv"
         output:
@@ -103,6 +109,12 @@ if config["atlas_labels"]:
             datatype="slicer_fcsv",
             **inputs["post_ct"].wildcards,
         ),
+            updated_other_fcsv=bids(
+                root=config["output_dir"],
+                suffix="atlas_labelled_contactseg.fcsv",
+                datatype="slicer_fcsv",
+                **inputs["post_ct"].wildcards,
+            ),
         params:
             fuzzy_dist=2
         script:
