@@ -144,10 +144,11 @@ def add_labels_to_fcsv(input_fcsv_path, output_fcsv_path, atlas_labels):
             
             # Rejoin the line with commas
             f_out.write(",".join(parts) + "\n")
+
 if __name__ == "__main__":
     # Read the FCSV file, skipping metadata lines starting with '#'
     points_df = pd.read_csv(
-        snakemake.input.points,
+        snakemake.input.mni_coords,
         sep=',',  # FCSV files are comma-separated
         comment='#',  # Skip lines starting with '#'
         header=None  # No header row in the data section
@@ -171,11 +172,11 @@ if __name__ == "__main__":
 
     # Extract the produced labels dynamically
     produced_labels = labeled_points['atlas_label'].to_numpy()
-    input_fcsv_path = snakemake.input.other_fcsv
-    output_fcsv_path = snakemake.output.updated_other_fcsv
+    input_fcsv_path = snakemake.input.t1w_coords
+    output_fcsv_path = snakemake.output.atlas_labelled_t1w_contactseg
 
     # Save the labeled points as an FCSV file in MNI space
-    save_as_fcsv(labeled_points, snakemake.output.labeled_points)
+    save_as_fcsv(labeled_points, snakemake.output.atlas_labelled_mni_contactseg)
 
     add_labels_to_fcsv(
         input_fcsv_path=input_fcsv_path,

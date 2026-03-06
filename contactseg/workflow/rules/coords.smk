@@ -88,13 +88,13 @@ if config["atlas_labels"]:
 
     rule lookup_atlas_labels:
         input:
-            points=bids(  
+            mni_coords=bids(  
                 root=config["output_dir"],
                 suffix="mni_transformed_contactseg.fcsv",
                 datatype="slicer_fcsv",
                 **inputs["post_ct"].wildcards,
             ),
-            other_fcsv=bids(
+            t1w_coords=bids(
                 root=config["output_dir"],
                 suffix="labelled_contactseg.fcsv",
                 datatype="slicer_fcsv",
@@ -103,13 +103,13 @@ if config["atlas_labels"]:
             atlas_segmentation="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii",
             atlas_labels="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_atlas-CerebA_dseg.tsv"
         output:
-            labeled_points=bids(
+            atlas_labelled_mni_contactseg=bids(
             root=config["output_dir"],
-            suffix="labelled_contactseg_mni.fcsv",
+            suffix="atlas_labelled_mni_contactseg.fcsv",
             datatype="slicer_fcsv",
             **inputs["post_ct"].wildcards,
         ),
-            updated_other_fcsv=bids(
+            atlas_labelled_t1w_contactseg=bids(
                 root=config["output_dir"],
                 suffix="atlas_labelled_contactseg.fcsv",
                 datatype="slicer_fcsv",
