@@ -472,8 +472,7 @@ def output_html_file(
         #     label_long = convert_acronym_to_words(label)
         label_long = convert_acronym_to_words(label)
 
-        html_parts.append(
-            f"""
+        html_parts.append(f"""
             <div style="margin-bottom: 40px;">
                 <p style="font-size:20px;"><b>({label}) - {label_long}</b></p>
                 <div style="display: flex; justify-content: center; align-items: center; gap: 10px; text-align: center; background-color: black;">
@@ -506,12 +505,10 @@ def output_html_file(
                 </div>
                 <hr style="height:4px;border-width:0;color:black;background-color:black;margin-top:30px;">
             </div>
-        """
-        )
+        """)
 
     with open(output_html, "w") as f:
-        f.write(
-            f"""
+        f.write(f"""
             <html>
             <head>
                 <style>
@@ -589,8 +586,7 @@ def output_html_file(
                 </script>
             </body>
             </html>
-        """
-        )
+        """)
 
 
 if __name__ == "__main__":

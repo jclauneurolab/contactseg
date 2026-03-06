@@ -1,5 +1,5 @@
 import ants
-import csv 
+import csv
 import numpy as np
 
 
@@ -78,11 +78,11 @@ def affine_registration(t1_img, mni_template, out_im, xfm_ras, xfm_slicer):
     None
     """
 
-    #Load images
+    # Load images
     t1_img = ants.image_read(t1_img)
     mni_template = ants.image_read(mni_template)
 
-    #Perform affine registration
+    # Perform affine registration
     registration_result = ants.registration(
         fixed=mni_template,
         moving=t1_img,
@@ -114,6 +114,7 @@ def affine_registration(t1_img, mni_template, out_im, xfm_ras, xfm_slicer):
         writer = csv.writer(file, delimiter=" ")
         for row in full_matrix:
             writer.writerow(row)
+
 
 if __name__ == "__main__":
     affine_registration(

@@ -105,7 +105,7 @@ def get_final_output():
             inputs["post_ct"].expand(
                 bids(
                     root=config["output_dir"],
-                    suffix="labelled_contactseg_mni.fcsv",
+                    suffix="atlas_labelled_contactseg.fcsv",
                     datatype="slicer_fcsv",
                     **inputs["post_ct"].wildcards,
                 )
