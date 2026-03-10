@@ -1,7 +1,9 @@
 import ants
 
 
-def transform_atlas_to_t1(atlas_image, t1_image, inverse_warp, affine, affine_syn, output_atlas_t1):
+def transform_atlas_to_t1(
+    atlas_image, t1_image, inverse_warp, affine, affine_syn, output_atlas_t1
+):
     # Read the atlas image and T1 image
     atlas = ants.image_read(atlas_image)
     t1 = ants.image_read(t1_image)

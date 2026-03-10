@@ -94,10 +94,14 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
         else:
             region_name = np.nan
             voxel_value = np.nan
-        
+
         # If the region name is nan, look at surrounding labels
-        if pd.isna(region_name) and (pd.isna(voxel_value)): # Check if region_name is nan
-            print(f"Region name is nan for index {i+1}. Searching surrounding labels...")
+        if pd.isna(region_name) and (
+            pd.isna(voxel_value)
+        ):  # Check if region_name is nan
+            print(
+                f"Region name is nan for index {i+1}. Searching surrounding labels..."
+            )
             non_nan_labels = []
             non_nan_distances = []
 
