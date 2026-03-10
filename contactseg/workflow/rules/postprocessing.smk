@@ -166,6 +166,13 @@ rule transform_atlas_to_t1:
             suffix="slicer.mat",
             **inputs["pre_t1w"].wildcards,
         ),
+        affine_syn=bids(
+            root=config["output_dir"],
+            desc="t1_to_mni",
+            suffix="Affine.mat",
+            datatype="nonlinear_registration",
+            **inputs["pre_t1w"].wildcards,
+        ),
     output:
         atlas_in_t1=bids(
             root=config["output_dir"],

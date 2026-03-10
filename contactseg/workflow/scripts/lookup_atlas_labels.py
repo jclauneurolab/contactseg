@@ -31,9 +31,6 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
     # voxel_list = []
 
     for i in range(len(coords)):
-        print(
-            f"Processing electrode {i}: {df_template.iloc[i]['label']} at coords {coords[i]}"
-        )
         coords_vx = np.round(
             nib.affines.apply_affine(np.linalg.inv(dseg_affine), coords[i, :])
         ).astype(int)
@@ -86,6 +83,7 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
             )
             nearest_voxel = np.unravel_index(np.argmin(distances), distances.shape)
             voxel_value = selected_atlasdata[nearest_voxel]
+            nearest_distance = distances[nearest_voxel]
             used_fuzzy = 1
 
         if voxel_value > 0:
@@ -96,6 +94,37 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
         else:
             region_name = np.nan
             voxel_value = np.nan
+        
+        # If the region name is nan, look at surrounding labels
+        if pd.isna(region_name) and (pd.isna(voxel_value)): # Check if region_name is nan
+            print(f"Region name is nan for index {i+1}. Searching surrounding labels...")
+            non_nan_labels = []
+            non_nan_distances = []
+
+            # Iterate over the surrounding voxels
+            for x in range(selected_atlasdata.shape[0]):
+                for y in range(selected_atlasdata.shape[1]):
+                    for z in range(selected_atlasdata.shape[2]):
+                        label = selected_atlasdata[x, y, z]
+                        if label > 0:  # Only consider non-zero labels
+                            distance = distances_mat[x, y, z]
+                            non_nan_labels.append(label)
+                            non_nan_distances.append(distance)
+
+            if non_nan_labels:
+                # Find the closest label based on distance
+                closest_index = np.argmin(non_nan_distances)
+                voxel_value = non_nan_labels[closest_index]
+                region_info = df_atlas.loc[df_atlas["label"] == voxel_value].iloc[0]
+                hemisphere = "Left" if region_info["hemi"] == "L" else "Right"
+                region_name = f"{region_info['name']} ({hemisphere})"
+                print(
+                    f"Closest label found for index {i+1}: {region_name} "
+                    f"at distance {non_nan_distances[closest_index]:.3f}"
+                )
+            else:
+                print(f"No non-nan labels found for index {i+1}. Label remains nan.")
+                region_name = np.nan
 
         labelnames.append(region_name)
         # fuzzy_list.append(used_fuzzy)

@@ -1,7 +1,7 @@
 import ants
 
 
-def transform_atlas_to_t1(atlas_image, t1_image, inverse_warp, affine, output_atlas_t1):
+def transform_atlas_to_t1(atlas_image, t1_image, inverse_warp, affine, affine_syn, output_atlas_t1):
     # Read the atlas image and T1 image
     atlas = ants.image_read(atlas_image)
     t1 = ants.image_read(t1_image)
@@ -10,9 +10,9 @@ def transform_atlas_to_t1(atlas_image, t1_image, inverse_warp, affine, output_at
     atlas_in_t1 = ants.apply_transforms(
         fixed=t1,
         moving=atlas,
-        transformlist=[inverse_warp, affine],
-        whichtoinvert=[False, True],
-        interpolator="linear",
+        transformlist=[affine, affine_syn, inverse_warp],
+        whichtoinvert=[True, True, False],
+        interpolator="nearestNeighbor",
     )
 
     # Save the transformed atlas image
@@ -25,5 +25,6 @@ if __name__ == "__main__":
         t1_image=snakemake.input.t1_image,
         inverse_warp=snakemake.input.inverse_warp,
         affine=snakemake.input.affine,
+        affine_syn=snakemake.input.affine_syn,
         output_atlas_t1=snakemake.output.atlas_in_t1,
     )

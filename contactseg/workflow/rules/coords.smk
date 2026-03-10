@@ -110,7 +110,7 @@ if config["atlas_labels"]:
                 **inputs["post_ct"].wildcards,
             ),
         params:
-            fuzzy_dist=2
+            fuzzy_dist=5 
         script:
             "../scripts/lookup_atlas_labels.py"
 
