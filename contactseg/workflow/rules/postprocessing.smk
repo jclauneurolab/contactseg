@@ -142,7 +142,7 @@ rule apply_full_transformation:
 
 rule transform_atlas_to_t1:
     input:
-        atlas_image="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii",  
+        atlas_image=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"),  
         t1_image=bids(
             root=config["output_dir"],
             suffix="T1w",
