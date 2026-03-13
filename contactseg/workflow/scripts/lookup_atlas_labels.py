@@ -14,7 +14,7 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
     Look up atlas labels for a list of points.
 
     Parameters:
-    - df_template: DataFrame containing the points to label.
+    - df_template: DataFrame containing the points in atlas space to label.
     - coords_columns: List of column names for the coordinates (e.g., ['x', 'y', 'z']).
     - dseg_nii: NIfTI image of the atlas segmentation.
     - df_atlas: DataFrame containing atlas labels and their corresponding voxel values.
@@ -27,8 +27,6 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
     dseg_affine = dseg_nii.affine
     coords = df_template[coords_columns].to_numpy()
     labelnames = []
-    # fuzzy_list = []
-    # voxel_list = []
 
     for i in range(len(coords)):
         coords_vx = np.round(
@@ -95,44 +93,7 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
             region_name = np.nan
             voxel_value = np.nan
 
-        # If the region name is nan, look at surrounding labels
-        if pd.isna(region_name) and (
-            pd.isna(voxel_value)
-        ):  # Check if region_name is nan
-            print(
-                f"Region name is nan for index {i+1}. Searching surrounding labels..."
-            )
-            non_nan_labels = []
-            non_nan_distances = []
-
-            # Iterate over the surrounding voxels
-            for x in range(selected_atlasdata.shape[0]):
-                for y in range(selected_atlasdata.shape[1]):
-                    for z in range(selected_atlasdata.shape[2]):
-                        label = selected_atlasdata[x, y, z]
-                        if label > 0:  # Only consider non-zero labels
-                            distance = distances_mat[x, y, z]
-                            non_nan_labels.append(label)
-                            non_nan_distances.append(distance)
-
-            if non_nan_labels:
-                # Find the closest label based on distance
-                closest_index = np.argmin(non_nan_distances)
-                voxel_value = non_nan_labels[closest_index]
-                region_info = df_atlas.loc[df_atlas["label"] == voxel_value].iloc[0]
-                hemisphere = "Left" if region_info["hemi"] == "L" else "Right"
-                region_name = f"{region_info['name']} ({hemisphere})"
-                print(
-                    f"Closest label found for index {i+1}: {region_name} "
-                    f"at distance {non_nan_distances[closest_index]:.3f}"
-                )
-            else:
-                print(f"No non-nan labels found for index {i+1}. Label remains nan.")
-                region_name = np.nan
-
         labelnames.append(region_name)
-        # fuzzy_list.append(used_fuzzy)
-        # voxel_list.append(voxel_value)
 
     return labelnames
 
@@ -143,7 +104,7 @@ def write_fcsv_with_labels(input_fcsv_path, output_fcsv_path, atlas_labels):
 
     Parameters:
     - input_fcsv_path: Path to the source FCSV file.
-    - output_fcsv_path: Path to write the labelled FCSV file.
+    - output_fcsv_path: Path to write the atlas labelled FCSV file.
     - atlas_labels: List of label strings aligned to the data rows.
     """
     with open(input_fcsv_path, "r") as f:
@@ -163,15 +124,14 @@ def write_fcsv_with_labels(input_fcsv_path, output_fcsv_path, atlas_labels):
 
 
 if __name__ == "__main__":
-    # Read the FCSV file, skipping metadata lines starting with '#'
+    # Read the atlas tranformed points FCSV file
     points_df = pd.read_csv(
         snakemake.input.mni_coords,
-        sep=",",  # FCSV files are comma-separated
-        comment="#",  # Skip lines starting with '#'
-        header=None,  # No header row in the data section
+        sep=",",
+        comment="#",
+        header=None,
     )
 
-    # Assign column names (adjust based on your FCSV format)
     points_df.columns = [
         "id",
         "x",
@@ -207,3 +167,42 @@ if __name__ == "__main__":
         snakemake.output.atlas_labelled_t1w_contactseg,
         atlas_labels,
     )
+
+    # Read the native T1w coordinates to include in the CSV
+    t1w_points_df = pd.read_csv(
+        snakemake.input.t1w_coords,
+        sep=",",
+        comment="#",
+        header=None,
+    )
+    t1w_points_df.columns = [
+        "id",
+        "x",
+        "y",
+        "z",
+        "ow",
+        "ox",
+        "oy",
+        "oz",
+        "vis",
+        "sel",
+        "lock",
+        "label",
+        "desc",
+        "associatedNodeID",
+    ]
+
+    # Output to a CSV file containing both Native and MNI coordinates
+    csv_df = pd.DataFrame(
+        {
+            "Original_Label": t1w_points_df["label"],
+            "Atlas_Label": atlas_labels,
+            "Native_X": t1w_points_df["x"],
+            "Native_Y": t1w_points_df["y"],
+            "Native_Z": t1w_points_df["z"],
+            "MNI_X": points_df["x"],
+            "MNI_Y": points_df["y"],
+            "MNI_Z": points_df["z"],
+        }
+    )
+    csv_df.to_csv(snakemake.output.csv_file, index=False)

@@ -80,25 +80,25 @@ rule get_t1w_to_mni_matrix:
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
-        mni_template="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz"
+        mni_template=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz")
     output:
         xfm_slicer=bids(
             root=config["output_dir"],
-            datatype="registration",
+            datatype="atlas",
             desc="from_T1w-to-MNI",
             suffix="slicer.mat",
             **inputs["pre_t1w"].wildcards,
         ),
         xfm_ras=bids(
             root=config["output_dir"],
-            datatype="registration",
+            datatype="atlas",
             desc="from_T1w-to-MNI",
             suffix="xfm.txt",
             **inputs["pre_t1w"].wildcards,
         ),
         out_im=bids(
             root=config["output_dir"],
-            datatype="anat",
+            datatype="atlas",
             session="pre",
             space="MNI",
             suffix="T1w.nii.gz",

@@ -67,33 +67,33 @@ rule nonlinear_t1_to_mni:
     input:
         t1_in_mni_img=bids(
             root=config["output_dir"],
-            datatype="anat",
+            datatype="atlas",
             session="pre",
             space="MNI",
             suffix="T1w.nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
-        mni_template="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz"
+        mni_template=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz")
     output:
         forward_warp=bids(
             root=config["output_dir"],
             desc="t1_to_mni",
             suffix="Warp.nii.gz",
-            datatype="nonlinear_registration",
+            datatype="atlas",
             **inputs["pre_t1w"].wildcards,
         ),
         inverse_warp=bids(
             root=config["output_dir"],
             desc="mni_to_t1",
             suffix="InverseWarp.nii.gz",
-            datatype="nonlinear_registration",
+            datatype="atlas",
             **inputs["pre_t1w"].wildcards,
         ),
         affine_syn=bids(
             root=config["output_dir"],
             desc="t1_to_mni",
             suffix="Affine.mat",
-            datatype="nonlinear_registration",
+            datatype="atlas",
             **inputs["pre_t1w"].wildcards,
         ),
     script:
@@ -112,19 +112,19 @@ rule apply_full_transformation:
             root=config["output_dir"],
             desc="t1_to_mni",
             suffix="Warp.nii.gz",
-            datatype="nonlinear_registration",
+            datatype="atlas",
             **inputs["pre_t1w"].wildcards,
         ),
         affine_syn=bids(
             root=config["output_dir"],
             desc="t1_to_mni",
             suffix="Affine.mat",
-            datatype="nonlinear_registration",
+            datatype="atlas",
             **inputs["pre_t1w"].wildcards,
         ),
         affine=bids(
             root=config["output_dir"],
-            datatype="registration",
+            datatype="atlas",
             desc="from_T1w-to-MNI",
             suffix="slicer.mat",
             **inputs["pre_t1w"].wildcards,
@@ -133,7 +133,7 @@ rule apply_full_transformation:
         output_coords=bids(
             root=config["output_dir"],
             suffix="mni_transformed_contactseg.fcsv",
-            datatype="slicer_fcsv",
+            datatype="atlas",
             **inputs["post_ct"].wildcards,
         ),
     script:
@@ -156,12 +156,12 @@ rule transform_atlas_to_t1:
             root=config["output_dir"],
             desc="mni_to_t1",
             suffix="InverseWarp.nii.gz",
-            datatype="nonlinear_registration",
+            datatype="atlas",
             **inputs["pre_t1w"].wildcards,
         ),
         affine=bids(
             root=config["output_dir"],
-            datatype="registration",
+            datatype="atlas",
             desc="from_T1w-to-MNI",
             suffix="slicer.mat",
             **inputs["pre_t1w"].wildcards,
@@ -170,14 +170,14 @@ rule transform_atlas_to_t1:
             root=config["output_dir"],
             desc="t1_to_mni",
             suffix="Affine.mat",
-            datatype="nonlinear_registration",
+            datatype="atlas",
             **inputs["pre_t1w"].wildcards,
         ),
     output:
         atlas_in_t1=bids(
             root=config["output_dir"],
             suffix="atlas_in_t1_space.nii.gz",
-            datatype="anat",
+            datatype="atlas",
             session="post",
             **inputs["post_ct"].wildcards,
         ),

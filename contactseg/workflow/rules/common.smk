@@ -106,17 +106,16 @@ def get_final_output():
                 bids(
                     root=config["output_dir"],
                     suffix="atlas_labelled_contactseg.fcsv",
-                    datatype="slicer_fcsv",
+                    datatype="atlas",
                     **inputs["post_ct"].wildcards,
                 )
             )
         )
-    if config["affine_test"]:
         final.extend(
             inputs["post_ct"].expand(
                 bids(
                     root=config["output_dir"],
-                    datatype="slicer_fcsv",
+                    datatype="atlas",
                     suffix="mni_transformed_contactseg.fcsv",
                     **inputs["post_ct"].wildcards,
                 )
@@ -126,7 +125,7 @@ def get_final_output():
             inputs["post_ct"].expand(
                 bids(
                     root=config["output_dir"],
-                    datatype="anat",
+                    datatype="atlas",
                     suffix="atlas_in_t1_space.nii.gz",
                     session="post",
                     **inputs["post_ct"].wildcards,

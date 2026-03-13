@@ -91,7 +91,7 @@ if config["atlas_labels"]:
             mni_coords=bids(  
                 root=config["output_dir"],
                 suffix="mni_transformed_contactseg.fcsv",
-                datatype="slicer_fcsv",
+                datatype="atlas",
                 **inputs["post_ct"].wildcards,
             ),
             t1w_coords=bids(
@@ -100,17 +100,23 @@ if config["atlas_labels"]:
                 datatype="slicer_fcsv",
                 **inputs["post_ct"].wildcards,
             ),
-            atlas_segmentation="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii",
-            atlas_labels="/local/scratch/contactseg/resources/atlases/tpl-MNI152NLin2009cSym_atlas-CerebA_dseg.tsv"
+            atlas_segmentation=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"),
+            atlas_labels=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_atlas-CerebA_dseg.tsv")
         output:
             atlas_labelled_t1w_contactseg=bids(
                 root=config["output_dir"],
                 suffix="atlas_labelled_contactseg.fcsv",
-                datatype="slicer_fcsv",
+                datatype="atlas",
+                **inputs["post_ct"].wildcards,
+            ),
+             csv_file=bids(
+                root=config["output_dir"],
+                suffix="atlas_labelled_contactseg.csv",
+                datatype="atlas",
                 **inputs["post_ct"].wildcards,
             ),
         params:
-            fuzzy_dist=5 
+            fuzzy_dist=2
         script:
             "../scripts/lookup_atlas_labels.py"
 

@@ -32,13 +32,14 @@ def warp_contacts_to_mni(input_fcsv, output_fcsv, affine, affine_syn, forward_wa
     points["x"] *= -1
     points["y"] *= -1
 
-    # Apply Transform
+    # Apply Transform- note order is affine->affine_syn->forward_warp
     transformed_points = ants.apply_transforms_to_points(
         dim=3,
         points=points,
         transformlist=[forward_warp, affine_syn, affine],
         whichtoinvert=[False, True, True],
     )
+    transformed_points.columns = ["x", "y", "z"]
 
     # Convert LPS back to RAS
     transformed_points["x"] *= -1
