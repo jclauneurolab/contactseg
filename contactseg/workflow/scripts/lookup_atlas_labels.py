@@ -124,85 +124,174 @@ def write_fcsv_with_labels(input_fcsv_path, output_fcsv_path, atlas_labels):
 
 
 if __name__ == "__main__":
-    # Read the atlas tranformed points FCSV file
-    points_df = pd.read_csv(
-        snakemake.input.mni_coords,
-        sep=",",
-        comment="#",
-        header=None,
-    )
 
-    points_df.columns = [
-        "id",
-        "x",
-        "y",
-        "z",
-        "ow",
-        "ox",
-        "oy",
-        "oz",
-        "vis",
-        "sel",
-        "lock",
-        "label",
-        "desc",
-        "associatedNodeID",
-    ]
+    native_space = snakemake.params.native_space
 
-    # Load atlas segmentation and labels
-    dseg_nii = nib.load(snakemake.input.atlas_segmentation)
-    df_atlas = pd.read_csv(snakemake.input.atlas_labels, sep="\t")
+    if native_space:
+        print("Using native space for atlas labeling.")
+        # Read the native points FCSV file
+        points_df = pd.read_csv(
+            snakemake.input.native_coords,
+            sep=",",
+            comment="#",
+            header=None,
+        )
 
-    # Look up atlas labels
-    atlas_labels = lookup_atlas_label(
-        df_template=points_df,
-        coords_columns=["x", "y", "z"],
-        dseg_nii=dseg_nii,
-        df_atlas=df_atlas,
-        fuzzy_dist=snakemake.params.fuzzy_dist,
-    )
+        points_df.columns = [
+            "id",
+            "x",
+            "y",
+            "z",
+            "ow",
+            "ox",
+            "oy",
+            "oz",
+            "vis",
+            "sel",
+            "lock",
+            "label",
+            "desc",
+            "associatedNodeID",
+        ]
 
-    write_fcsv_with_labels(
-        snakemake.input.t1w_coords,
-        snakemake.output.atlas_labelled_t1w_contactseg,
-        atlas_labels,
-    )
+        # Load atlas segmentation and labels
+        dseg_nii = nib.load(snakemake.input.atlas_segmentation_in_native)
+        df_atlas = pd.read_csv(snakemake.input.atlas_labels, sep="\t")
 
-    # Read the native T1w coordinates to include in the CSV
-    t1w_points_df = pd.read_csv(
-        snakemake.input.t1w_coords,
-        sep=",",
-        comment="#",
-        header=None,
-    )
-    t1w_points_df.columns = [
-        "id",
-        "x",
-        "y",
-        "z",
-        "ow",
-        "ox",
-        "oy",
-        "oz",
-        "vis",
-        "sel",
-        "lock",
-        "label",
-        "desc",
-        "associatedNodeID",
-    ]
+        # Look up atlas labels
+        atlas_labels = lookup_atlas_label(
+            df_template=points_df,
+            coords_columns=["x", "y", "z"],
+            dseg_nii=dseg_nii,
+            df_atlas=df_atlas,
+            fuzzy_dist=snakemake.params.fuzzy_dist,
+        )
 
-    # Output to a CSV file containing both Native and MNI coordinates
-    csv_df = pd.DataFrame(
-        {
-            "Original_Label": t1w_points_df["label"],
-            "Atlas_Label": atlas_labels,
-            "Native_X": t1w_points_df["x"],
-            "Native_Y": t1w_points_df["y"],
-            "Native_Z": t1w_points_df["z"],
-            "MNI_X": points_df["x"],
-            "MNI_Y": points_df["y"],
-            "MNI_Z": points_df["z"],
-        }
-    )
-    csv_df.to_csv(snakemake.output.csv_file, index=False)
+        write_fcsv_with_labels(
+            snakemake.input.native_coords,
+            snakemake.output.atlas_labelled_t1w_contactseg,
+            atlas_labels,
+        )
+
+        # Read the MNI transformed coordinates to include in the CSV
+        mni_points_df = pd.read_csv(
+            snakemake.input.mni_coords,
+            sep=",",
+            comment="#",
+            header=None,
+        )
+        mni_points_df.columns = [
+            "id",
+            "x",
+            "y",
+            "z",
+            "ow",
+            "ox",
+            "oy",
+            "oz",
+            "vis",
+            "sel",
+            "lock",
+            "label",
+            "desc",
+            "associatedNodeID",
+        ]
+
+        # Output to a CSV file containing both Native and MNI coordinates
+        csv_df = pd.DataFrame(
+            {
+                "Original_Label": points_df["label"],
+                "Atlas_Label": atlas_labels,
+                "Native_X": points_df["x"],
+                "Native_Y": points_df["y"],
+                "Native_Z": points_df["z"],
+                "MNI_X": mni_points_df["x"],
+                "MNI_Y": mni_points_df["y"],
+                "MNI_Z": mni_points_df["z"],
+            }
+        )
+        csv_df.to_csv(snakemake.output.csv_file, index=False)
+    else:
+        print("Using MNI space for atlas labeling.")
+        # Read the atlas tranformed points FCSV file
+        points_df = pd.read_csv(
+            snakemake.input.mni_coords,
+            sep=",",
+            comment="#",
+            header=None,
+        )
+
+        points_df.columns = [
+            "id",
+            "x",
+            "y",
+            "z",
+            "ow",
+            "ox",
+            "oy",
+            "oz",
+            "vis",
+            "sel",
+            "lock",
+            "label",
+            "desc",
+            "associatedNodeID",
+        ]
+
+        # Load atlas segmentation and labels
+        dseg_nii = nib.load(snakemake.input.atlas_segmentation_in_mni)
+        df_atlas = pd.read_csv(snakemake.input.atlas_labels, sep="\t")
+
+        # Look up atlas labels
+        atlas_labels = lookup_atlas_label(
+            df_template=points_df,
+            coords_columns=["x", "y", "z"],
+            dseg_nii=dseg_nii,
+            df_atlas=df_atlas,
+            fuzzy_dist=snakemake.params.fuzzy_dist,
+        )
+
+        write_fcsv_with_labels(
+            snakemake.input.native_coords,
+            snakemake.output.atlas_labelled_t1w_contactseg,
+            atlas_labels,
+        )
+
+        # Read the native T1w coordinates to include in the CSV
+        t1w_points_df = pd.read_csv(
+            snakemake.input.native_coords,
+            sep=",",
+            comment="#",
+            header=None,
+        )
+        t1w_points_df.columns = [
+            "id",
+            "x",
+            "y",
+            "z",
+            "ow",
+            "ox",
+            "oy",
+            "oz",
+            "vis",
+            "sel",
+            "lock",
+            "label",
+            "desc",
+            "associatedNodeID",
+        ]
+
+        # Output to a CSV file containing both Native and MNI coordinates
+        csv_df = pd.DataFrame(
+            {
+                "Original_Label": t1w_points_df["label"],
+                "Atlas_Label": atlas_labels,
+                "Native_X": t1w_points_df["x"],
+                "Native_Y": t1w_points_df["y"],
+                "Native_Z": t1w_points_df["z"],
+                "MNI_X": points_df["x"],
+                "MNI_Y": points_df["y"],
+                "MNI_Z": points_df["z"],
+            }
+        )
+        csv_df.to_csv(snakemake.output.csv_file, index=False)

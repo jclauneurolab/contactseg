@@ -103,6 +103,17 @@ parse_args:
       Use atlas-based anatomical labels for contacts instead of generic electrode labels.
     action: store_true
     default: false
+  --use_native_space:
+    help: >
+      Whether to use native space for atlas labelling instead of MNI space.
+    action: store_true
+    default: false
+  --SMRIPREP-DIR:
+    help: >
+      Path to the directory containing the outputs of smriprep, used for atlas-based labelling (default: %(default)s)
+    default: false
+    required: false 
+    type: str 
 
 
 containers: {}

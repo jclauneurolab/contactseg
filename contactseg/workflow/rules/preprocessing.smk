@@ -69,43 +69,45 @@ rule get_registration_matrix:
     script:
         "../scripts/registration.py"
 
-rule get_t1w_to_mni_matrix:
-    input:
-        t1_img=bids(
-            root=config["output_dir"],
-            suffix="T1w",
-            desc="n4",
-            datatype="anat",
-            session="pre",
-            extension=".nii.gz",
-            **inputs["pre_t1w"].wildcards,
-        ),
-        mni_template=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz")
-    output:
-        xfm_slicer=bids(
-            root=config["output_dir"],
-            datatype="atlas",
-            desc="from_T1w-to-MNI",
-            suffix="slicer.mat",
-            **inputs["pre_t1w"].wildcards,
-        ),
-        xfm_ras=bids(
-            root=config["output_dir"],
-            datatype="atlas",
-            desc="from_T1w-to-MNI",
-            suffix="xfm.txt",
-            **inputs["pre_t1w"].wildcards,
-        ),
-        out_im=bids(
-            root=config["output_dir"],
-            datatype="atlas",
-            session="pre",
-            space="MNI",
-            suffix="T1w.nii.gz",
-            **inputs["pre_t1w"].wildcards,
-        ),
-    script:
-        "../scripts/affine.py"
+if not config.get("SMRIPREP_DIR"):
+
+    rule get_t1w_to_mni_matrix:
+        input:
+            t1_img=bids(
+                root=config["output_dir"],
+                suffix="T1w",
+                desc="n4",
+                datatype="anat",
+                session="pre",
+                extension=".nii.gz",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            mni_template=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz")
+        output:
+            xfm_slicer=bids(
+                root=config["output_dir"],
+                datatype="atlas",
+                desc="from_T1w-to-MNI",
+                suffix="slicer.mat",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            xfm_ras=bids(
+                root=config["output_dir"],
+                datatype="atlas",
+                desc="from_T1w-to-MNI",
+                suffix="xfm.txt",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            out_im=bids(
+                root=config["output_dir"],
+                datatype="atlas",
+                session="pre",
+                space="MNI",
+                suffix="T1w.nii.gz",
+                **inputs["pre_t1w"].wildcards,
+            ),
+        script:
+            "../scripts/affine.py"
 
 if config["manual_reg_matrix"]:
 

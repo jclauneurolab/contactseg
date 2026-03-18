@@ -2,7 +2,7 @@ import pandas as pd
 import ants
 
 
-def warp_contacts_to_mni(input_fcsv, output_fcsv, affine, affine_syn, forward_warp):
+def warp_contacts_to_mni(input_fcsv, output_fcsv, transforms):
     """
     Function that applies a full transformation to warp contact coordinates to MNI space.
 
@@ -32,12 +32,21 @@ def warp_contacts_to_mni(input_fcsv, output_fcsv, affine, affine_syn, forward_wa
     points["x"] *= -1
     points["y"] *= -1
 
+    transforms = snakemake.input.transforms
+    if isinstance(transforms, str):
+        transforms = [transforms]
+
+    if len(transforms) == 3:
+        inv_flags = [False, True, True]
+    else:
+        inv_flags = [False]
+
     # Apply Transform- note order is affine->affine_syn->forward_warp
     transformed_points = ants.apply_transforms_to_points(
         dim=3,
         points=points,
-        transformlist=[forward_warp, affine_syn, affine],
-        whichtoinvert=[False, True, True],
+        transformlist=transforms,
+        whichtoinvert=inv_flags,
     )
     transformed_points.columns = ["x", "y", "z"]
 
@@ -63,8 +72,6 @@ def warp_contacts_to_mni(input_fcsv, output_fcsv, affine, affine_syn, forward_wa
 if __name__ == "__main__":
     warp_contacts_to_mni(
         input_fcsv=snakemake.input.coords,
-        affine=snakemake.input.affine,
-        forward_warp=snakemake.input.forward_warp,
-        affine_syn=snakemake.input.affine_syn,
+        transforms=snakemake.input.transforms,
         output_fcsv=snakemake.output.output_coords,
     )
