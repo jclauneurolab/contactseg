@@ -98,6 +98,48 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
     return labelnames
 
 
+def white_vs_grey_label(coords_list, dseg_path):
+
+    # Load the native space segmentation
+    img = nib.load(dseg_path)
+    data = img.get_fdata()
+
+    # Get the inverse affine to map physical (x,y,z) to voxel (i,j,k)
+    inv_affine = np.linalg.inv(img.affine)
+
+    tissue_labels = []
+
+    for x, y, z in coords_list:
+
+        coord_ras = [x, y, z]
+
+        # Transform physical coordinate to voxel index
+        voxel_idx = nib.affines.apply_affine(inv_affine, coord_ras)
+        i, j, k = np.round(voxel_idx).astype(int)
+
+        # Check if the voxel is inside the image bounds
+        if (
+            (0 <= i < data.shape[0])
+            and (0 <= j < data.shape[1])
+            and (0 <= k < data.shape[2])
+        ):
+            label_val = data[i, j, k]
+
+            # Standard ANTs/sMRIPrep dseg values: 1=CSF, 2=Grey Matter, 3=White Matter
+            if label_val == 1:
+                tissue_labels.append("Grey Matter")
+            elif label_val == 2:
+                tissue_labels.append("White Matter")
+            elif label_val == 3:
+                tissue_labels.append("CSF")
+            else:
+                tissue_labels.append("Other")
+        else:
+            tissue_labels.append("Out of Bounds")
+
+    return tissue_labels
+
+
 def write_fcsv_with_labels(input_fcsv_path, output_fcsv_path, atlas_labels):
     """
     Copy an FCSV file, replacing the 'label' column (index 11) with atlas labels.
@@ -126,6 +168,34 @@ def write_fcsv_with_labels(input_fcsv_path, output_fcsv_path, atlas_labels):
 if __name__ == "__main__":
 
     native_space = snakemake.params.native_space
+
+    t1w_points_df = pd.read_csv(
+        snakemake.input.native_coords,
+        sep=",",
+        comment="#",
+        header=None,
+    )
+    t1w_points_df.columns = [
+        "id",
+        "x",
+        "y",
+        "z",
+        "ow",
+        "ox",
+        "oy",
+        "oz",
+        "vis",
+        "sel",
+        "lock",
+        "label",
+        "desc",
+        "associatedNodeID",
+    ]
+
+    tissue_type = white_vs_grey_label(
+        t1w_points_df[["x", "y", "z"]].values.tolist(),
+        snakemake.input.native_dseg,
+    )
 
     if native_space:
         print("Using native space for atlas labeling.")
@@ -202,6 +272,7 @@ if __name__ == "__main__":
             {
                 "Original_Label": points_df["label"],
                 "Atlas_Label": atlas_labels,
+                "Tissue_Type": tissue_type,
                 "Native_X": points_df["x"],
                 "Native_Y": points_df["y"],
                 "Native_Z": points_df["z"],
@@ -286,6 +357,7 @@ if __name__ == "__main__":
             {
                 "Original_Label": t1w_points_df["label"],
                 "Atlas_Label": atlas_labels,
+                "Tissue_Type": tissue_type,
                 "Native_X": t1w_points_df["x"],
                 "Native_Y": t1w_points_df["y"],
                 "Native_Z": t1w_points_df["z"],

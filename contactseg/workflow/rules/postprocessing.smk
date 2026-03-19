@@ -70,7 +70,6 @@ if not config.get("SMRIPREP_DIR"):
             t1_in_mni_img=bids(
                 root=config["output_dir"],
                 datatype="atlas",
-                session="pre",
                 space="MNI",
                 suffix="T1w.nii.gz",
                 **inputs["pre_t1w"].wildcards,
@@ -164,7 +163,6 @@ rule transform_atlas_to_t1:
             root=config["output_dir"],
             suffix="atlas_in_t1_space.nii.gz",
             datatype="atlas",
-            session="post",
             **inputs["post_ct"].wildcards,
         ),
     script:
