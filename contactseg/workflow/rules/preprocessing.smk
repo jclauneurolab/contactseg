@@ -101,7 +101,6 @@ if not config.get("SMRIPREP_DIR"):
             out_im=bids(
                 root=config["output_dir"],
                 datatype="atlas",
-                session="pre",
                 space="MNI",
                 suffix="T1w.nii.gz",
                 **inputs["pre_t1w"].wildcards,

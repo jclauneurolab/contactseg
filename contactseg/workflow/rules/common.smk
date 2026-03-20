@@ -127,7 +127,6 @@ def get_final_output():
                     root=config["output_dir"],
                     datatype="atlas",
                     suffix="atlas_in_t1_space.nii.gz",
-                    session="post",
                     **inputs["post_ct"].wildcards,
                 )
             )

@@ -107,9 +107,9 @@ def get_forward_transforms(wildcards):
         return [f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_from-MNI152NLin2009cSym_to-T1w_mode-image_xfm.h5"]
     else:
         return [
-            bids(root=config["output_dir"], desc="t1_to_mni", suffix="Warp.nii.gz", datatype="atlas", **wildcards),
-            bids(root=config["output_dir"], desc="t1_to_mni", suffix="Affine.mat", datatype="atlas", **wildcards),
-            bids(root=config["output_dir"], datatype="atlas", desc="from_T1w-to-MNI", suffix="slicer.mat", **wildcards)
+            bids(root=config["output_dir"], desc="t1_to_mni", suffix="Warp.nii.gz", datatype="atlas", **inputs["pre_t1w"].wildcards),
+            bids(root=config["output_dir"], desc="t1_to_mni", suffix="Affine.mat", datatype="atlas", **inputs["pre_t1w"].wildcards),
+            bids(root=config["output_dir"], datatype="atlas", desc="from_T1w-to-MNI", suffix="slicer.mat", **inputs["pre_t1w"].wildcards)
         ]
 
 def get_inverse_transforms(wildcards):
@@ -119,9 +119,9 @@ def get_inverse_transforms(wildcards):
         return [f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_from-MNI152NLin2009cSym_to-T1w_mode-image_xfm.h5"]
     else:
         return [
-            bids(root=config["output_dir"], datatype="atlas", desc="from_T1w-to-MNI", suffix="slicer.mat", **wildcards),
-            bids(root=config["output_dir"], desc="t1_to_mni", suffix="Affine.mat", datatype="atlas", **wildcards),
-            bids(root=config["output_dir"], desc="mni_to_t1", suffix="InverseWarp.nii.gz", datatype="atlas", **wildcards)
+            bids(root=config["output_dir"], datatype="atlas", desc="from_T1w-to-MNI", suffix="slicer.mat", **inputs["pre_t1w"].wildcards),
+            bids(root=config["output_dir"], desc="t1_to_mni", suffix="Affine.mat", datatype="atlas", **inputs["pre_t1w"].wildcards),
+            bids(root=config["output_dir"], desc="mni_to_t1", suffix="InverseWarp.nii.gz", datatype="atlas", **inputs["pre_t1w"].wildcards)
         ]
 
 

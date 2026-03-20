@@ -111,7 +111,6 @@ if config["atlas_labels"]:
                 root=config["output_dir"],
                 suffix="atlas_in_t1_space.nii.gz",
                 datatype="atlas",
-                session="post",
                 **inputs["post_ct"].wildcards,
             ),
             atlas_segmentation_in_mni=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"),
@@ -132,7 +131,8 @@ if config["atlas_labels"]:
             ),
         params:
             fuzzy_dist=2,
-            native_space = config["use_native_space"]
+            native_space = config["use_native_space"],
+            GWmatter_labels = config["SMRIPREP_DIR"]
         script:
             "../scripts/lookup_atlas_labels.py"
 
