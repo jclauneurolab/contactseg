@@ -24,3 +24,12 @@ getting_started/installation
 
 usage/cli
 ```
+
+```{toctree}
+:caption: Outputs of contactseg
+:name: outputs
+:hidden:
+:maxdepth: 1
+
+outputs/outputs
+```
