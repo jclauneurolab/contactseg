@@ -139,6 +139,33 @@ def white_vs_grey_label(coords_list, dseg_path):
 
     return tissue_labels
 
+def tissue_probability(coords_list, prob_seg_GM, prob_seg_WM, prob_seg_CSF):
+
+    prob_seg_GM = nib.load(prob_seg_GM)
+    inv_affine = np.linalg.inv(prob_seg_GM.affine)
+    prob_seg_GM = prob_seg_GM.get_fdata()
+    prob_seg_WM = nib.load(prob_seg_WM).get_fdata()
+    prob_seg_CSF = nib.load(prob_seg_CSF).get_fdata()
+
+    tissue_probs = []
+    for x, y, z in coords_list:
+
+        coord_ras = [x, y, z]
+
+        # Transform physical coordinate to voxel index
+        voxel_idx = nib.affines.apply_affine(inv_affine, coord_ras)
+        i, j, k = np.round(voxel_idx).astype(int)
+
+        if (
+            (0 <= i < prob_seg_GM.shape[0])
+            and (0 <= j < prob_seg_GM.shape[1])
+            and (0 <= k < prob_seg_GM.shape[2])
+        ):
+            prob_GM = prob_seg_GM[i, j, k]
+            prob_WM = prob_seg_WM[i, j, k]
+            prob_CSF = prob_seg_CSF[i, j, k]
+            tissue_probs.append((prob_GM, prob_WM, prob_CSF))
+    return tissue_probs
 
 def write_fcsv_with_labels(input_fcsv_path, output_fcsv_path, atlas_labels):
     """
@@ -199,6 +226,12 @@ if __name__ == "__main__":
         tissue_type = white_vs_grey_label(
             native_df[["x", "y", "z"]].values, snakemake.input.native_dseg
         )
+        tissue_probs = tissue_probability(
+            native_df[["x", "y", "z"]].values,
+            snakemake.input.native_prob_seg_GM,
+            snakemake.input.native_prob_seg_WM,
+            snakemake.input.native_prob_seg_CSF
+        )
 
     if native_space:
         print("Using native space for atlas labeling.")
@@ -229,6 +262,9 @@ if __name__ == "__main__":
             "Original_Label": native_df["label"],
             "Atlas_Label": atlas_labels,
             "Tissue_Type": tissue_type,
+            "GM_Probability": [p[0] for p in tissue_probs],
+            "WM_Probability": [p[1] for p in tissue_probs],
+            "CSF_Probability": [p[2] for p in tissue_probs],
             "Native_X": native_df["x"],
             "Native_Y": native_df["y"],
             "Native_Z": native_df["z"],

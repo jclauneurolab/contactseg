@@ -92,6 +92,15 @@ if config["atlas_labels"]:
             session = getattr(wildcards, "session", "pre") 
             return f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_dseg.nii.gz"
         return [] 
+    def get_smriprep_probseg(label):
+        def get_probseg(wildcards):
+            smriprep_dir = config.get("SMRIPREP_DIR") or config.get("SMRIPREP-DIR")
+            if smriprep_dir:
+                session = getattr(wildcards, "session", "pre") 
+                return f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_label-{label}_probseg.nii.gz"
+            return []
+        return get_probseg
+
 
     rule lookup_atlas_labels:
         input:
@@ -115,7 +124,11 @@ if config["atlas_labels"]:
             ),
             atlas_segmentation_in_mni=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"),
             atlas_labels=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_atlas-CerebA_dseg.tsv"),
-            native_dseg=get_smriprep_dseg
+            native_dseg=get_smriprep_dseg,
+            native_prob_seg_GM =get_smriprep_probseg("GM"),
+            native_prob_seg_WM =get_smriprep_probseg("WM"),
+            native_prob_seg_CSF =get_smriprep_probseg("CSF"),
+
         output:
             atlas_labelled_t1w_contactseg=bids(
                 root=config["output_dir"],
