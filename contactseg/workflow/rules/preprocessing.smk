@@ -82,7 +82,7 @@ if not config.get("SMRIPREP_DIR"):
                 extension=".nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
-            mni_template=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz")
+            mni_template=get_template_t1w
         output:
             xfm_slicer=bids(
                 root=config["output_dir"],

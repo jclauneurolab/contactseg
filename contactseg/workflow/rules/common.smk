@@ -132,3 +132,36 @@ def get_final_output():
             )
         )
     return final
+
+
+def get_template_atlas(wildcards=None):
+
+    template_name = config.get("template_flow") or config.get("template-flow", False)
+    atlas_name = config.get("template_atlas") or config.get("template-atlas", False)
+    if template_name and atlas_name:
+        return str(Path(config["output_dir"]) / f"templateflow/tpl-{template_name}_atlas-{atlas_name}_dseg.nii.gz")
+    return str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii")
+
+def get_template_atlas_tsv(wildcards=None):
+
+    template_name = config.get("template_flow") or config.get("template-flow", False)
+    atlas_name = config.get("template_atlas") or config.get("template-atlas", False)
+    if template_name and atlas_name:
+        return str(Path(config["output_dir"]) / f"templateflow/tpl-{template_name}_atlas-{atlas_name}_dseg.tsv")
+    return str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_atlas-CerebA_dseg.tsv")
+
+   
+def get_template_t1w(wildcards=None):
+
+    template_name = config.get("template_flow") or config.get("template-flow", False)
+    atlas_name = config.get("template_atlas") or config.get("template-atlas", False)
+    """
+    Returns the path to the T1w template image. 
+    Uses the downloaded TemplateFlow image if specified, otherwise uses a local fallback.
+    """
+    
+    if template_name:
+        return str(Path(config["output_dir"]) / f"templateflow/tpl-{template_name}_T1w.nii.gz")
+    
+    # Fallback to your local default template if template-flow is not used
+    return str(Path(workflow.basedir).parent.parent / "resources/templates/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz")

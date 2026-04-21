@@ -85,6 +85,24 @@ if config["label"]:
             "../scripts/generate_tsv.py"
 
 if config["atlas_labels"]:
+    template_name = config.get("template_flow") or config.get("template-flow", False)
+    atlas_name = config.get("template_atlas") or config.get("template-atlas", False)
+
+    if template_name and atlas_name:
+        rule download_templateflow:
+            output:
+                atlas_dseg=Path(config["output_dir"]) / f"templateflow/tpl-{template_name}_atlas-{atlas_name}_dseg.nii.gz",
+                atlas_tsv=Path(config["output_dir"]) / f"templateflow/tpl-{template_name}_atlas-{atlas_name}_dseg.tsv",
+                template_t1w=Path(config["output_dir"]) / f"templateflow/tpl-{template_name}_T1w.nii.gz"
+            params:
+                template=template_name,
+                atlas=atlas_name,
+                out_dir=str(Path(config["output_dir"]) / "templateflow")
+            conda:
+                "../envs/templateflow.yaml"
+            script:
+                "../scripts/template_flow.py"
+
 
     def get_smriprep_dseg(wildcards):
         smriprep_dir = config.get("SMRIPREP_DIR") or config.get("SMRIPREP-DIR")
@@ -122,8 +140,8 @@ if config["atlas_labels"]:
                 datatype="atlas",
                 **inputs["post_ct"].wildcards,
             ),
-            atlas_segmentation_in_mni=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"),
-            atlas_labels=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_atlas-CerebA_dseg.tsv"),
+            atlas_segmentation_in_mni=get_template_atlas(),
+            atlas_labels=get_template_atlas_tsv(),
             native_dseg=get_smriprep_dseg,
             native_prob_seg_GM =get_smriprep_probseg("GM"),
             native_prob_seg_WM =get_smriprep_probseg("WM"),

@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 import os
-import sys
 from pathlib import Path
 
 from snakebids import bidsapp, plugins
 
+# Import your utils module
+try:
+    from contactseg.workflow.lib import utils as utils
+except ImportError:
+    from workflow.lib import utils as utils
+
 if "__file__" not in globals():
     __file__ = "../contactseg/run.py"
-import os
+
+# Set templateflow directory to your OS cache via utils BEFORE the app runs
+os.environ["TEMPLATEFLOW_HOME"] = str(Path(utils.get_download_dir()) / "templateflow")
 
 app = bidsapp.app(
     [
@@ -19,11 +26,9 @@ app = bidsapp.app(
     ]
 )
 
-
 def get_parser():
-    """Exposes parser for sphinx doc generation, cwd is the docs dir."""
+    """Exposes parser for sphinx doc generation, cwd is the docs dir"""
     return app.build_parser().parser
-
 
 if __name__ == "__main__":
     app.run()

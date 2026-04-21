@@ -85,10 +85,20 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
             used_fuzzy = 1
 
         if voxel_value > 0:
+             # Dynamically find the correct column name for the ID
+            possible_id_cols = ["index", "label", "id", "value"]
+            id_col = next((col for col in possible_id_cols if col in df_atlas.columns), None)
+            
+            if not id_col:
+                raise ValueError(f"Could not find an ID column in atlas TSV. Found: {list(df_atlas.columns)}")
+            
             # Retrieve the region name and hemisphere
-            region_info = df_atlas.loc[df_atlas["label"] == voxel_value].iloc[0]
-            hemisphere = "Left" if region_info["hemi"] == "L" else "Right"
-            region_name = f"{region_info['name']} ({hemisphere})"
+            region_info = df_atlas.loc[df_atlas[id_col] == voxel_value].iloc[0]
+            if "hemi" in region_info.index and pd.notna(region_info["hemi"]):
+                hemisphere = "Left" if region_info["hemi"] == "L" else "Right"
+                region_name = f"{region_info['name']} ({hemisphere})"
+            else:
+                region_name = str(region_info['name'])
         else:
             region_name = np.nan
             voxel_value = np.nan
@@ -221,6 +231,11 @@ if __name__ == "__main__":
     df_atlas = pd.read_csv(snakemake.input.atlas_labels, sep="\t")
 
     tissue_type = "Unknown"
+     # Initialize defaults in case GWmatter_labels is False
+    num_coords = len(native_df)
+    tissue_type = ["Unknown"] * num_coords
+    tissue_probs = [(np.nan, np.nan, np.nan)] * num_coords
+
 
     if snakemake.params.GWmatter_labels:
         tissue_type = white_vs_grey_label(
