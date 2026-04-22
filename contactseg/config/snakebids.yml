@@ -116,7 +116,7 @@ parse_args:
     type: str 
   --template-flow:
     help: >
-      Downloads a template from templateflow and uses it to assess the quality of registration and look up atlas labels.
+      Downloads a template from templateflow and uses it to look up atlas labels.
     choices: ['Fischer344', 'MNI152NLin2009cAsym', 'MNI152NLin6Asym', 'NMT31Sym', 'SUIT', 'VALiDATe29']
     default: false
     required: false
@@ -124,8 +124,14 @@ parse_args:
   --template-atlas:
     help: >
       The atlas to download from TemplateFlow matching the chosen template. 
-      (Note: CerebrA is typically MNI152NLin2009cSym; Schaefer2018, HarvardOxford, AAL, etc., are usually MNI152NLin2009cAsym or MNI152NLin6Asym).
-    choices: ['Schaefer2018', 'HarvardOxford', 'AAL', 'Juelich', 'Brainnetome', 'CerebA', 'DiFuMo', 'Desikan', 'Destrieux']
+    choices: ['v4','MASSP20', 'MIAL67ThalamicNuclei', 'Schaefer2018', 'HOCPA', 'HOCPAL', 'HOSPA',  'CHARM', 'D99', 'SARM', 'Diedrichsen2009', 'VALiDATe']
+    default: false
+    required: false
+    type: str
+  --atlas-desc:
+    help: >
+      The specific description tag for the atlas (required for atlases with multiple granularities like Schaefer2018 or thresholds like HOCPA).
+      Example: '400Parcels7Networks' or 'th0'
     default: false
     required: false
     type: str

@@ -6,15 +6,15 @@ from snakebids import bidsapp, plugins
 
 # Import your utils module
 try:
-    from contactseg.workflow.lib import utils as utils
+    from contactseg.workflow.lib import utils_tf as utils_tf
 except ImportError:
-    from workflow.lib import utils as utils
+    from workflow.lib import utils_tf as utils_tf
 
 if "__file__" not in globals():
     __file__ = "../contactseg/run.py"
 
 # Set templateflow directory to your OS cache via utils BEFORE the app runs
-os.environ["TEMPLATEFLOW_HOME"] = str(Path(utils.get_download_dir()) / "templateflow")
+os.environ["TEMPLATEFLOW_HOME"] = str(Path(utils_tf.get_download_dir()) / "templateflow")
 
 app = bidsapp.app(
     [

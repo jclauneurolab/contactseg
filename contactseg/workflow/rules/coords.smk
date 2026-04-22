@@ -87,17 +87,20 @@ if config["label"]:
 if config["atlas_labels"]:
     template_name = config.get("template_flow") or config.get("template-flow", False)
     atlas_name = config.get("template_atlas") or config.get("template-atlas", False)
+    atlas_desc=config.get("atlas_desc") or config.get("atlas-desc", False)
+
 
     if template_name and atlas_name:
         rule download_templateflow:
-            output:
-                atlas_dseg=Path(config["output_dir"]) / f"templateflow/tpl-{template_name}_atlas-{atlas_name}_dseg.nii.gz",
-                atlas_tsv=Path(config["output_dir"]) / f"templateflow/tpl-{template_name}_atlas-{atlas_name}_dseg.tsv",
-                template_t1w=Path(config["output_dir"]) / f"templateflow/tpl-{template_name}_T1w.nii.gz"
             params:
                 template=template_name,
                 atlas=atlas_name,
-                out_dir=str(Path(config["output_dir"]) / "templateflow")
+                atlas_desc=atlas_desc
+            output:
+                template_path=directory(Path(config["output_dir"]) / "templateflow"),
+                t1w=get_template_t1w(),
+                atlas_img=get_template_atlas(),
+                atlas_tsv=get_template_atlas_tsv()
             conda:
                 "../envs/templateflow.yaml"
             script:
