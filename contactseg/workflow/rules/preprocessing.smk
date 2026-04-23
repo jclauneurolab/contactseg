@@ -82,7 +82,7 @@ if not config.get("SMRIPREP_DIR"):
                 extension=".nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
-            mni_template=get_template_t1w
+            mni_template=target_t1w
         output:
             xfm_slicer=bids(
                 root=config["output_dir"],
@@ -143,3 +143,5 @@ if config["manual_reg_matrix"]:
             ),
         script:
             "../scripts/apply_registration.py"
+
+ 

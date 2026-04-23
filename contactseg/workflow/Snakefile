@@ -35,7 +35,7 @@ wildcard_constraints:
     label="[a-zA-Z0-9]+",
     template="[a-zA-Z0-9]+",
 
-
+include: "rules/templateflow.smk"
 include: "rules/common.smk"
 include: "rules/preprocessing.smk"
 include: "rules/nnunet.smk"

@@ -74,7 +74,7 @@ if not config.get("SMRIPREP_DIR"):
                 suffix="T1w.nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
-            mni_template=get_template_t1w(),
+            mni_template=target_t1w,
         output:
             forward_warp=bids(
                 root=config["output_dir"],
@@ -147,7 +147,7 @@ rule apply_full_transformation:
 
 rule transform_atlas_to_t1:
     input:
-        atlas_image=get_template_atlas(),  
+        atlas_image=target_atlas_nii,  
         t1_image=bids(
             root=config["output_dir"],
             suffix="T1w",
