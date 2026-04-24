@@ -57,5 +57,5 @@ if __name__ == "__main__":
         ref_img=snakemake.input.ref_im,
         transform_matrix=snakemake.input.transform_matrix,
         out_img=snakemake.output.out_im,
-        non_interpolated=bool(snakemake.params.get("non_interpolated", False)),
+        non_interpolated=snakemake.params.non_interpolated,
     )
