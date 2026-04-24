@@ -25,7 +25,7 @@ rule register_contacts:
             **inputs["post_ct"].wildcards,
         ),
     params:
-        non_interpolated=config["non_interpolated"]
+        non_interpolated=config["non_interpolated"],
     script:
         "../scripts/apply_registration.py"
 

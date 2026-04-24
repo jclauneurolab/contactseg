@@ -67,7 +67,7 @@ rule get_registration_matrix:
             **inputs["post_ct"].wildcards,
         ),
     params:
-        non_interpolated=config["non_interpolated"]
+        non_interpolated=config["non_interpolated"],
     script:
         "../scripts/registration.py"
 
@@ -106,6 +106,6 @@ if config["manual_reg_matrix"]:
                 **inputs["post_ct"].wildcards,
             ),
         params:
-            non_interpolated=config["non_interpolated"]
+            non_interpolated=config["non_interpolated"],
         script:
             "../scripts/apply_registration.py"
