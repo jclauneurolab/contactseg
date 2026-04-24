@@ -63,6 +63,7 @@ rule contacts_qc:
     script:
         "../scripts/contacts_qc.py"
 
+
 if not config.get("SMRIPREP_DIR"):
 
     rule nonlinear_t1_to_mni:
@@ -74,7 +75,10 @@ if not config.get("SMRIPREP_DIR"):
                 suffix="T1w.nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
-            mni_template=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz")
+            mni_template=str(
+                Path(workflow.basedir).parent.parent
+                / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz"
+            ),
         output:
             forward_warp=bids(
                 root=config["output_dir"],
@@ -100,41 +104,83 @@ if not config.get("SMRIPREP_DIR"):
         script:
             "../scripts/nonlinear_registration.py"
 
+
 def get_forward_transforms(wildcards):
     smriprep_dir = config.get("SMRIPREP_DIR") or config.get("SMRIPREP-DIR")
     session = getattr(wildcards, "session", "pre")
     if smriprep_dir:
-        return [f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_from-MNI152NLin2009cSym_to-T1w_mode-image_xfm.h5"]
+        return [
+            f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_from-MNI152NLin2009cSym_to-T1w_mode-image_xfm.h5"
+        ]
     else:
         return [
-            bids(root=config["output_dir"], desc="t1_to_mni", suffix="Warp.nii.gz", datatype="atlas", **inputs["pre_t1w"].wildcards),
-            bids(root=config["output_dir"], desc="t1_to_mni", suffix="Affine.mat", datatype="atlas", **inputs["pre_t1w"].wildcards),
-            bids(root=config["output_dir"], datatype="atlas", desc="from_T1w-to-MNI", suffix="slicer.mat", **inputs["pre_t1w"].wildcards)
+            bids(
+                root=config["output_dir"],
+                desc="t1_to_mni",
+                suffix="Warp.nii.gz",
+                datatype="atlas",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            bids(
+                root=config["output_dir"],
+                desc="t1_to_mni",
+                suffix="Affine.mat",
+                datatype="atlas",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            bids(
+                root=config["output_dir"],
+                datatype="atlas",
+                desc="from_T1w-to-MNI",
+                suffix="slicer.mat",
+                **inputs["pre_t1w"].wildcards,
+            ),
         ]
+
 
 def get_inverse_transforms(wildcards):
     smriprep_dir = config.get("SMRIPREP_DIR") or config.get("SMRIPREP-DIR")
     session = getattr(wildcards, "session", "pre")
     if smriprep_dir:
-        return [f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_from-MNI152NLin2009cSym_to-T1w_mode-image_xfm.h5"]
+        return [
+            f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_from-MNI152NLin2009cSym_to-T1w_mode-image_xfm.h5"
+        ]
     else:
         return [
-            bids(root=config["output_dir"], datatype="atlas", desc="from_T1w-to-MNI", suffix="slicer.mat", **inputs["pre_t1w"].wildcards),
-            bids(root=config["output_dir"], desc="t1_to_mni", suffix="Affine.mat", datatype="atlas", **inputs["pre_t1w"].wildcards),
-            bids(root=config["output_dir"], desc="mni_to_t1", suffix="InverseWarp.nii.gz", datatype="atlas", **inputs["pre_t1w"].wildcards)
+            bids(
+                root=config["output_dir"],
+                datatype="atlas",
+                desc="from_T1w-to-MNI",
+                suffix="slicer.mat",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            bids(
+                root=config["output_dir"],
+                desc="t1_to_mni",
+                suffix="Affine.mat",
+                datatype="atlas",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            bids(
+                root=config["output_dir"],
+                desc="mni_to_t1",
+                suffix="InverseWarp.nii.gz",
+                datatype="atlas",
+                **inputs["pre_t1w"].wildcards,
+            ),
         ]
 
 
 rule apply_full_transformation:
     input:
         coords=bids(
-                root=config["output_dir"],
-                suffix="labelled_contactseg.fcsv",
-                datatype="slicer_fcsv",
-                **inputs["post_ct"].wildcards,
+            root=config["output_dir"],
+            suffix="labelled_contactseg.fcsv",
+            datatype="slicer_fcsv",
+            **inputs["post_ct"].wildcards,
         ),
-        transforms=get_forward_transforms
-    output: 
+        transforms=get_forward_transforms,
+    output:
         output_coords=bids(
             root=config["output_dir"],
             suffix="mni_transformed_contactseg.fcsv",
@@ -147,7 +193,10 @@ rule apply_full_transformation:
 
 rule transform_atlas_to_t1:
     input:
-        atlas_image=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"),  
+        atlas_image=str(
+            Path(workflow.basedir).parent.parent
+            / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"
+        ),
         t1_image=bids(
             root=config["output_dir"],
             suffix="T1w",
@@ -157,11 +206,13 @@ rule transform_atlas_to_t1:
             extension=".nii.gz",
             **inputs["pre_t1w"].wildcards,
         ),
-        transforms=get_inverse_transforms
+        transforms=get_inverse_transforms,
     output:
         atlas_in_t1=bids(
             root=config["output_dir"],
-            suffix="atlas_in_t1_space.nii.gz",
+            suffix="dseg.nii.gz",
+            desc="CerebA",
+            space="t1w",
             datatype="atlas",
             **inputs["post_ct"].wildcards,
         ),

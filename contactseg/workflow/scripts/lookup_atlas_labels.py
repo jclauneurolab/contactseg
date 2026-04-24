@@ -139,6 +139,7 @@ def white_vs_grey_label(coords_list, dseg_path):
 
     return tissue_labels
 
+
 def tissue_probability(coords_list, prob_seg_GM, prob_seg_WM, prob_seg_CSF):
 
     prob_seg_GM = nib.load(prob_seg_GM)
@@ -167,6 +168,7 @@ def tissue_probability(coords_list, prob_seg_GM, prob_seg_WM, prob_seg_CSF):
             tissue_probs.append((prob_GM, prob_WM, prob_CSF))
     return tissue_probs
 
+
 def write_fcsv_with_labels(input_fcsv_path, output_fcsv_path, atlas_labels):
     """
     Copy an FCSV file, replacing the 'label' column (index 11) with atlas labels.
@@ -191,6 +193,7 @@ def write_fcsv_with_labels(input_fcsv_path, output_fcsv_path, atlas_labels):
             parts[11] = str(atlas_labels[i])
             f.write(",".join(parts) + "\n")
 
+
 FCSV_COLUMNS = [
     "id",
     "x",
@@ -208,19 +211,25 @@ FCSV_COLUMNS = [
     "associatedNodeID",
 ]
 
+
 def load_fcsv(path):
     return pd.read_csv(path, sep=",", comment="#", header=None, names=FCSV_COLUMNS)
 
+
 if __name__ == "__main__":
 
-    native_space = snakemake.params.native_space
     GWmatter_labels = snakemake.params.GWmatter_labels
 
     native_df = load_fcsv(snakemake.input.native_coords)
     mni_df = load_fcsv(snakemake.input.mni_coords)
     df_atlas = pd.read_csv(snakemake.input.atlas_labels, sep="\t")
-
-    tissue_type = "Unknown"
+    dseg_nii = nib.load(snakemake.input.atlas_segmentation_in_native)
+    tissue_type, GM_Probability, WM_Probability, CSF_Probability = (
+        "Unknown",
+        "NA",
+        "NA",
+        "NA",
+    )
 
     if snakemake.params.GWmatter_labels:
         tissue_type = white_vs_grey_label(
@@ -230,20 +239,14 @@ if __name__ == "__main__":
             native_df[["x", "y", "z"]].values,
             snakemake.input.native_prob_seg_GM,
             snakemake.input.native_prob_seg_WM,
-            snakemake.input.native_prob_seg_CSF
+            snakemake.input.native_prob_seg_CSF,
         )
-
-    if native_space:
-        print("Using native space for atlas labeling.")
-        dseg_nii = nib.load(snakemake.input.atlas_segmentation_in_native)
-        active_df = native_df
-    else:
-        print("Using MNI space for atlas labeling.")
-        dseg_nii = nib.load(snakemake.input.atlas_segmentation_in_mni)
-        active_df = mni_df
+        GM_Probability = [p[0] for p in tissue_probs]
+        WM_Probability = [p[1] for p in tissue_probs]
+        CSF_Probability = [p[2] for p in tissue_probs]
 
     atlas_labels = lookup_atlas_label(
-        df_template=active_df,
+        df_template=native_df,
         coords_columns=["x", "y", "z"],
         dseg_nii=dseg_nii,
         df_atlas=df_atlas,
@@ -262,9 +265,9 @@ if __name__ == "__main__":
             "Original_Label": native_df["label"],
             "Atlas_Label": atlas_labels,
             "Tissue_Type": tissue_type,
-            "GM_Probability": [p[0] for p in tissue_probs],
-            "WM_Probability": [p[1] for p in tissue_probs],
-            "CSF_Probability": [p[2] for p in tissue_probs],
+            "GM_Probability": GM_Probability,
+            "WM_Probability": WM_Probability,
+            "CSF_Probability": CSF_Probability,
             "Native_X": native_df["x"],
             "Native_Y": native_df["y"],
             "Native_Z": native_df["z"],

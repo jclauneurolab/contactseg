@@ -126,7 +126,9 @@ def get_final_output():
                 bids(
                     root=config["output_dir"],
                     datatype="atlas",
-                    suffix="atlas_in_t1_space.nii.gz",
+                    desc="CerebA",
+                    space="t1w",
+                    suffix="dseg.nii.gz",
                     **inputs["post_ct"].wildcards,
                 )
             )

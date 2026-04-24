@@ -84,27 +84,29 @@ if config["label"]:
         script:
             "../scripts/generate_tsv.py"
 
+
 if config["atlas_labels"]:
 
     def get_smriprep_dseg(wildcards):
         smriprep_dir = config.get("SMRIPREP_DIR") or config.get("SMRIPREP-DIR")
         if smriprep_dir:
-            session = getattr(wildcards, "session", "pre") 
+            session = getattr(wildcards, "session", "pre")
             return f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_dseg.nii.gz"
-        return [] 
+        return []
+
     def get_smriprep_probseg(label):
         def get_probseg(wildcards):
             smriprep_dir = config.get("SMRIPREP_DIR") or config.get("SMRIPREP-DIR")
             if smriprep_dir:
-                session = getattr(wildcards, "session", "pre") 
+                session = getattr(wildcards, "session", "pre")
                 return f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_label-{label}_probseg.nii.gz"
             return []
-        return get_probseg
 
+        return get_probseg
 
     rule lookup_atlas_labels:
         input:
-            mni_coords=bids(  
+            mni_coords=bids(
                 root=config["output_dir"],
                 suffix="mni_transformed_contactseg.fcsv",
                 datatype="atlas",
@@ -118,17 +120,24 @@ if config["atlas_labels"]:
             ),
             atlas_segmentation_in_native=bids(
                 root=config["output_dir"],
-                suffix="atlas_in_t1_space.nii.gz",
+                suffix="dseg.nii.gz",
+                desc="CerebA",
+                space="t1w",
                 datatype="atlas",
                 **inputs["post_ct"].wildcards,
             ),
-            atlas_segmentation_in_mni=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"),
-            atlas_labels=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_atlas-CerebA_dseg.tsv"),
+            atlas_segmentation_in_mni=str(
+                Path(workflow.basedir).parent.parent
+                / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"
+            ),
+            atlas_labels=str(
+                Path(workflow.basedir).parent.parent
+                / "resources/atlases/tpl-MNI152NLin2009cSym_atlas-CerebA_dseg.tsv"
+            ),
             native_dseg=get_smriprep_dseg,
-            native_prob_seg_GM =get_smriprep_probseg("GM"),
-            native_prob_seg_WM =get_smriprep_probseg("WM"),
-            native_prob_seg_CSF =get_smriprep_probseg("CSF"),
-
+            native_prob_seg_GM=get_smriprep_probseg("GM"),
+            native_prob_seg_WM=get_smriprep_probseg("WM"),
+            native_prob_seg_CSF=get_smriprep_probseg("CSF"),
         output:
             atlas_labelled_t1w_contactseg=bids(
                 root=config["output_dir"],
@@ -136,7 +145,7 @@ if config["atlas_labels"]:
                 datatype="atlas",
                 **inputs["post_ct"].wildcards,
             ),
-             csv_file=bids(
+            csv_file=bids(
                 root=config["output_dir"],
                 suffix="atlas_labelled_contactseg.csv",
                 datatype="atlas",
@@ -144,9 +153,6 @@ if config["atlas_labels"]:
             ),
         params:
             fuzzy_dist=2,
-            native_space = config["use_native_space"],
-            GWmatter_labels = config["SMRIPREP_DIR"]
+            GWmatter_labels=config["SMRIPREP_DIR"],
         script:
             "../scripts/lookup_atlas_labels.py"
-
-            

@@ -69,6 +69,7 @@ rule get_registration_matrix:
     script:
         "../scripts/registration.py"
 
+
 if not config.get("SMRIPREP_DIR"):
 
     rule get_t1w_to_mni_matrix:
@@ -82,7 +83,10 @@ if not config.get("SMRIPREP_DIR"):
                 extension=".nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
-            mni_template=str(Path(workflow.basedir).parent.parent / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz")
+            mni_template=str(
+                Path(workflow.basedir).parent.parent
+                / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz"
+            ),
         output:
             xfm_slicer=bids(
                 root=config["output_dir"],
@@ -107,6 +111,7 @@ if not config.get("SMRIPREP_DIR"):
             ),
         script:
             "../scripts/affine.py"
+
 
 if config["manual_reg_matrix"]:
 
