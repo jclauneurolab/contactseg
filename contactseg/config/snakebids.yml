@@ -98,6 +98,17 @@ parse_args:
     help: 'Exludes the label mapping code for the qc plots only displaying the acronyms (default: %(default)s)'
     default: False
     action: 'store_true' 
+  --atlas_labels:
+    help: >
+      Use atlas-based anatomical labels for contacts instead of generic electrode labels.
+    action: store_true
+    default: false
+  --SMRIPREP-DIR:
+    help: >
+      Path to the directory containing the outputs of smriprep, used for atlas-based labelling (default: %(default)s)
+    default: false
+    required: false 
+    type: str 
 
 
 containers: {}

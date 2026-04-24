@@ -100,4 +100,37 @@ def get_final_output():
                 )
             )
         )
+    if config["atlas_labels"]:
+        final.extend(
+            inputs["post_ct"].expand(
+                bids(
+                    root=config["output_dir"],
+                    suffix="atlas_labelled_contactseg.fcsv",
+                    datatype="atlas",
+                    **inputs["post_ct"].wildcards,
+                )
+            )
+        )
+        final.extend(
+            inputs["post_ct"].expand(
+                bids(
+                    root=config["output_dir"],
+                    datatype="atlas",
+                    suffix="mni_transformed_contactseg.fcsv",
+                    **inputs["post_ct"].wildcards,
+                )
+            )
+        )
+        final.extend(
+            inputs["post_ct"].expand(
+                bids(
+                    root=config["output_dir"],
+                    datatype="atlas",
+                    desc="CerebA",
+                    space="t1w",
+                    suffix="dseg.nii.gz",
+                    **inputs["post_ct"].wildcards,
+                )
+            )
+        )
     return final
