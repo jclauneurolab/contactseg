@@ -24,6 +24,8 @@ rule register_contacts:
             desc="contacts_nnUNet",
             **inputs["post_ct"].wildcards,
         ),
+    params:
+        non_interpolated=config["non_interpolated"],
     script:
         "../scripts/apply_registration.py"
 

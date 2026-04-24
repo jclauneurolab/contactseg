@@ -66,6 +66,8 @@ rule get_registration_matrix:
             suffix="ct.nii.gz",
             **inputs["post_ct"].wildcards,
         ),
+    params:
+        non_interpolated=config["non_interpolated"],
     script:
         "../scripts/registration.py"
 
@@ -103,5 +105,7 @@ if config["manual_reg_matrix"]:
                 suffix="ct.nii.gz",
                 **inputs["post_ct"].wildcards,
             ),
+        params:
+            non_interpolated=config["non_interpolated"],
         script:
             "../scripts/apply_registration.py"

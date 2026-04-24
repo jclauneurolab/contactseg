@@ -2,6 +2,7 @@ import csv
 
 import ants
 import numpy as np
+import nibabel as nib
 
 
 def antsmat2mat(transform, m_center):
@@ -57,7 +58,9 @@ def antsmat2mat(transform, m_center):
     return ras_inmatrix
 
 
-def registration(fixed_image, moving_image, xfm_ras, xfm_slicer, out_im):
+def registration(
+    fixed_image, moving_image, xfm_ras, xfm_slicer, out_im, non_interpolated=False
+):
     """
     Function that performs registration.
 
@@ -77,9 +80,12 @@ def registration(fixed_image, moving_image, xfm_ras, xfm_slicer, out_im):
     None
     """
 
+    # Store original path for non-interpolated mode
+    moving_image_path = moving_image
+
     # Load images
     fixed_image = ants.image_read(fixed_image)
-    moving_image = ants.image_read(moving_image)
+    moving_image = ants.image_read(moving_image_path)
 
     # Perform registration
     # registration_result = ants.registration(
@@ -114,8 +120,21 @@ def registration(fixed_image, moving_image, xfm_ras, xfm_slicer, out_im):
     transform = ants.read_transform(transformation_file_path)
     full_matrix = antsmat2mat(transform.parameters, transform.fixed_parameters)
 
-    # Save the registered image
-    ants.image_write(registered_image, out_im)
+    # Choose how to save the output image
+    if non_interpolated:
+        float_img = nib.load(moving_image_path)
+        new_affine = np.dot(full_matrix, float_img.affine)
+
+        float_img_trans = nib.Nifti1Image(
+            float_img.get_fdata(), affine=new_affine, header=float_img.header
+        )
+        float_img_trans.set_qform(float_img_trans.affine, code=1)
+        nib.save(float_img_trans, out_im)
+
+    else:
+        # Save the registered image with interpolation
+        ants.image_write(registered_image, out_im)
+
     ants.write_transform(transform, xfm_slicer)
 
     # Save the 4x4 transformation matrix to a file
@@ -131,4 +150,5 @@ registration(
     xfm_ras=snakemake.output.xfm_ras,
     xfm_slicer=snakemake.output.xfm_slicer,
     out_im=snakemake.output.out_im,
+    non_interpolated=snakemake.params.non_interpolated,
 )
