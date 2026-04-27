@@ -11,15 +11,6 @@ dependencies = [
     "appdirs>=1.4.4",
     "pulp<2.8.0; python_version<'3.11'",
     "pyvista>=0.44.2",
-    "acvl-utils==0.2",
-    "blosc2>=2.7.1",
-    "nnunetv2>=2.5.1",
-    "scikit-image>=0.25.0",
-    "torch>=2.5.1",
-    "torchaudio>=2.5.1",
-    "torchvision>=0.20.1",
-    "antspyx>=0.5.4",
-    "svgutils>=0.3.4",
 ]
 
 [project.optional-dependencies]
