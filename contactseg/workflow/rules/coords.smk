@@ -56,7 +56,9 @@ if config["label"]:
                 **inputs["post_ct"].wildcards,
             ),
         params:
-            electrode_type=str(Path(workflow.basedir).parent / config["electrode_type"]),
+            electrode_type=str(
+                Path(workflow.basedir).parent / config["electrode_type"]
+            ),
         group:
             "subj"
         conda:
