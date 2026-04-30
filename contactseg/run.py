@@ -26,10 +26,10 @@ app = bidsapp.app(
 )
 
 # Set the conda prefix directory
-conda_prefix = Path(utils_tf.get_download_dir()) / "conda"
+conda_prefix = Path(utils_tf.get_cache_dir()) / "conda"
 
 # Set templateflow directory to your OS cache via utils BEFORE the app runs
-os.environ["TEMPLATEFLOW_HOME"] = str(Path(utils_tf.get_download_dir()) / "templateflow")
+os.environ["TEMPLATEFLOW_HOME"] = str(Path(utils_tf.get_cache_dir()) / "templateflow")
 
 
 # Set the environment variable SNAKEMAKE_CONDA_PREFIX if not already set

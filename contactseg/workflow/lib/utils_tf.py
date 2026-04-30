@@ -1,12 +1,12 @@
 import os
 from appdirs import AppDirs
 
-def get_download_dir():
-    if "TEMPLATEFLOW_HOME" in os.environ.keys():
-        download_dir = os.environ["TEMPLATEFLOW_HOME"]
+def get_cache_dir():
+    if "CONTACTSEG_CACHE_DIR" in os.environ.keys():
+        cache_dir = os.environ["CONTACTSEG_CACHE_DIR"]
     else:
         # Create local download dir for atlases if it doesn't exist
         # This keeps it separate from nnUNet and autoafids
-        dirs = AppDirs("templateflow", "khanlab")
-        download_dir = dirs.user_cache_dir
-    return download_dir
+        dirs = AppDirs("contactseg", "khanlab")
+        cache_dir = dirs.user_cache_dir
+    return cache_dir

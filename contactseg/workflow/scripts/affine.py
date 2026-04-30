@@ -77,10 +77,12 @@ def affine_registration(t1_img, mni_template, out_im, xfm_ras, xfm_slicer):
     -------
     None
     """
+    with open(mni_template) as f:
+        template = f.read().strip()
 
     # Load images
     t1_img = ants.image_read(t1_img)
-    mni_template = ants.image_read(mni_template)
+    mni_template = ants.image_read(template)
 
     # Perform affine registration
     registration_result = ants.registration(

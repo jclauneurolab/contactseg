@@ -24,8 +24,10 @@ def nonlinear_registration(
     -------
     None
     """
+    with open(mni_template) as f:
+        template = f.read().strip()
 
-    fixed = ants.image_read(mni_template)
+    fixed = ants.image_read(template)
     moving = ants.image_read(t1_in_mni_img)
 
     reg = ants.registration(fixed=fixed, moving=moving, type_of_transform="SyN")
