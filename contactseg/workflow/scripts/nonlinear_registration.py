@@ -2,7 +2,7 @@ import ants
 
 
 def nonlinear_registration(
-    t1_in_mni_img, mni_template, forward_warp, inverse_warp, affine_syn
+    t1_in_mni_img, templateflow_paths, forward_warp, inverse_warp, affine_syn
 ):
     """
     Function that performs nonlinear registration using the SyN transformation.
@@ -24,10 +24,14 @@ def nonlinear_registration(
     -------
     None
     """
-    with open(mni_template) as f:
-        template = f.read().strip()
+    # Read the file paths from the template_txt
+    with open(templateflow_paths, "r") as f:
+        lines = f.readlines()
 
-    fixed = ants.image_read(template)
+    # Extract path for template
+    template_path = lines[0].strip().split(":")[1].strip()
+
+    fixed = ants.image_read(template_path)
     moving = ants.image_read(t1_in_mni_img)
 
     reg = ants.registration(fixed=fixed, moving=moving, type_of_transform="SyN")
@@ -45,7 +49,7 @@ def nonlinear_registration(
 if __name__ == "__main__":
     nonlinear_registration(
         t1_in_mni_img=snakemake.input.t1_in_mni_img,
-        mni_template=snakemake.input.mni_template,
+        templateflow_paths=snakemake.input.templateflow_paths,
         forward_warp=snakemake.output.forward_warp,
         inverse_warp=snakemake.output.inverse_warp,
         affine_syn=snakemake.output.affine_syn,

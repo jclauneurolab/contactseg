@@ -74,7 +74,7 @@ if not config.get("SMRIPREP_DIR"):
                 suffix="T1w.nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
-            mni_template="resources/templateflow_template.txt"
+            templateflow_paths="resources/templateflow_template.txt"
         output:
             forward_warp=bids(
                 root=config["output_dir"],
@@ -147,10 +147,7 @@ rule apply_full_transformation:
 
 rule transform_atlas_to_t1:
     input:
-        atlas_image=str(
-            Path(workflow.basedir).parent.parent
-            / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"
-        ),  
+        templateflow_paths="resources/templateflow_template.txt", 
         t1_image=bids(
             root=config["output_dir"],
             suffix="T1w",

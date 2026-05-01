@@ -56,7 +56,7 @@ def antsmat2mat(afftransform, m_center):
     return ras_inmatrix
 
 
-def affine_registration(t1_img, mni_template, out_im, xfm_ras, xfm_slicer):
+def affine_registration(t1_img, templateflow_paths, out_im, xfm_ras, xfm_slicer):
     """
     Function that performs affine registration.
 
@@ -77,16 +77,20 @@ def affine_registration(t1_img, mni_template, out_im, xfm_ras, xfm_slicer):
     -------
     None
     """
-    with open(mni_template) as f:
-        template = f.read().strip()
+    # Read the file paths from the template_txt
+    with open(templateflow_paths, "r") as f:
+        lines = f.readlines()
+
+    # Extract path for template
+    template_path = lines[0].strip().split(":")[1].strip()
 
     # Load images
     t1_img = ants.image_read(t1_img)
-    mni_template = ants.image_read(template)
+template = ants.image_read(template_path)
 
     # Perform affine registration
     registration_result = ants.registration(
-        fixed=mni_template,
+        fixed=template,
         moving=t1_img,
         type_of_transform="AffineFast",
         grad_step=0.25,
@@ -121,7 +125,7 @@ def affine_registration(t1_img, mni_template, out_im, xfm_ras, xfm_slicer):
 if __name__ == "__main__":
     affine_registration(
         t1_img=snakemake.input.t1_img,
-        mni_template=snakemake.input.mni_template,
+        templateflow_paths=snakemake.input.templateflow_paths,
         xfm_ras=snakemake.output.xfm_ras,
         xfm_slicer=snakemake.output.xfm_slicer,
         out_im=snakemake.output.out_im,

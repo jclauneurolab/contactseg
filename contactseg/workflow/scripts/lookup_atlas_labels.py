@@ -223,12 +223,18 @@ def load_fcsv(path):
 
 if __name__ == "__main__":
 
-    native_space = snakemake.params.native_space
     GWmatter_labels = snakemake.params.GWmatter_labels
 
     native_df = load_fcsv(snakemake.input.native_coords)
     mni_df = load_fcsv(snakemake.input.mni_coords)
-    df_atlas = pd.read_csv(snakemake.input.atlas_labels, sep="\t")
+    templateflow_paths = snakemake.input.templateflow_paths
+
+    # Read the file paths from the template_txt
+    with open(templateflow_paths, "r") as f:
+        lines = f.readlines()
+    atlas_labels = lines[2].strip().split(":")[1].strip()
+    dseg_nii = nib.load(lines[1].strip().split(":")[1].strip())
+    df_atlas = pd.read_csv(atlas_labels, sep="\t")
 
     tissue_type = "Unknown"
      # Initialize defaults in case GWmatter_labels is False
@@ -248,17 +254,8 @@ if __name__ == "__main__":
             snakemake.input.native_prob_seg_CSF
         )
 
-    if native_space:
-        print("Using native space for atlas labeling.")
-        dseg_nii = nib.load(snakemake.input.atlas_segmentation_in_native)
-        active_df = native_df
-    else:
-        print("Using MNI space for atlas labeling.")
-        dseg_nii = nib.load(snakemake.input.atlas_segmentation_in_mni)
-        active_df = mni_df
-
     atlas_labels = lookup_atlas_label(
-        df_template=active_df,
+        df_template=native_df,
         coords_columns=["x", "y", "z"],
         dseg_nii=dseg_nii,
         df_atlas=df_atlas,
