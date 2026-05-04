@@ -86,7 +86,7 @@ def affine_registration(t1_img, templateflow_paths, out_im, xfm_ras, xfm_slicer)
 
     # Load images
     t1_img = ants.image_read(t1_img)
-template = ants.image_read(template_path)
+    template = ants.image_read(template_path)
 
     # Perform affine registration
     registration_result = ants.registration(

@@ -92,13 +92,22 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
             if not id_col:
                 raise ValueError(f"Could not find an ID column in atlas TSV. Found: {list(df_atlas.columns)}")
             
-            # Retrieve the region name and hemisphere
-            region_info = df_atlas.loc[df_atlas[id_col] == voxel_value].iloc[0]
-            if "hemi" in region_info.index and pd.notna(region_info["hemi"]):
-                hemisphere = "Left" if region_info["hemi"] == "L" else "Right"
-                region_name = f"{region_info['name']} ({hemisphere})"
+            # --- FIXED LOGIC ---
+            # Filter the dataframe safely
+            matching_rows = df_atlas.loc[df_atlas[id_col] == voxel_value]
+            
+            # Check if we actually found a match before trying to extract it
+            if not matching_rows.empty:
+                region_info = matching_rows.iloc[0]
+                if "hemi" in region_info.index and pd.notna(region_info["hemi"]):
+                    hemisphere = "Left" if region_info["hemi"] == "L" else "Right"
+                    region_name = f"{region_info['name']} ({hemisphere})"
+                else:
+                    region_name = str(region_info['name'])
             else:
-                region_name = str(region_info['name'])
+                # If the value is in the NIfTI but missing from the TSV, fail gracefully
+                region_name = f"Unknown_ID_{voxel_value}"
+            # -------------------
         else:
             region_name = np.nan
             voxel_value = np.nan
