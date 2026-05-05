@@ -8,7 +8,7 @@ def transform_atlas_to_t1(templateflow_paths, t1_image, transforms, output_atlas
 
     # Extract path for atlas
     atlas_path = lines[1].strip().split(":")[1].strip()
-    
+
     # Read the atlas image and T1 image
     atlas = ants.image_read(atlas_path)
     t1 = ants.image_read(t1_image)

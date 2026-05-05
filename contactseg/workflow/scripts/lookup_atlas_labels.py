@@ -7,6 +7,7 @@ Script to look up atlas labels for a list of points and save them as a Slicer FC
 import pandas as pd
 import numpy as np
 import nibabel as nib
+import csv
 
 
 def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_dist=2):
@@ -85,17 +86,21 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
             used_fuzzy = 1
 
         if voxel_value > 0:
-             # Dynamically find the correct column name for the ID
+            # Dynamically find the correct column name for the ID
             possible_id_cols = ["index", "label", "id", "value"]
-            id_col = next((col for col in possible_id_cols if col in df_atlas.columns), None)
-            
+            id_col = next(
+                (col for col in possible_id_cols if col in df_atlas.columns), None
+            )
+
             if not id_col:
-                raise ValueError(f"Could not find an ID column in atlas TSV. Found: {list(df_atlas.columns)}")
-            
+                raise ValueError(
+                    f"Could not find an ID column in atlas TSV. Found: {list(df_atlas.columns)}"
+                )
+
             # --- FIXED LOGIC ---
             # Filter the dataframe safely
             matching_rows = df_atlas.loc[df_atlas[id_col] == voxel_value]
-            
+
             # Check if we actually found a match before trying to extract it
             if not matching_rows.empty:
                 region_info = matching_rows.iloc[0]
@@ -103,7 +108,7 @@ def lookup_atlas_label(df_template, coords_columns, dseg_nii, df_atlas, fuzzy_di
                     hemisphere = "Left" if region_info["hemi"] == "L" else "Right"
                     region_name = f"{region_info['name']} ({hemisphere})"
                 else:
-                    region_name = str(region_info['name'])
+                    region_name = str(region_info["name"])
             else:
                 # If the value is in the NIfTI but missing from the TSV, fail gracefully
                 region_name = f"Unknown_ID_{voxel_value}"
@@ -158,6 +163,7 @@ def white_vs_grey_label(coords_list, dseg_path):
 
     return tissue_labels
 
+
 def tissue_probability(coords_list, prob_seg_GM, prob_seg_WM, prob_seg_CSF):
 
     prob_seg_GM = nib.load(prob_seg_GM)
@@ -186,6 +192,7 @@ def tissue_probability(coords_list, prob_seg_GM, prob_seg_WM, prob_seg_CSF):
             tissue_probs.append((prob_GM, prob_WM, prob_CSF))
     return tissue_probs
 
+
 def write_fcsv_with_labels(input_fcsv_path, output_fcsv_path, atlas_labels):
     """
     Copy an FCSV file, replacing the 'label' column (index 11) with atlas labels.
@@ -195,20 +202,35 @@ def write_fcsv_with_labels(input_fcsv_path, output_fcsv_path, atlas_labels):
     - output_fcsv_path: Path to write the atlas labelled FCSV file.
     - atlas_labels: List of label strings aligned to the data rows.
     """
+    # 1. Read the header (lines starting with #)
     with open(input_fcsv_path, "r") as f:
         lines = f.readlines()
 
     header = [l for l in lines if l.startswith("#")]
+    # Identify non-comment data lines
     data_lines = [l for l in lines if not l.startswith("#") and l.strip()]
 
-    with open(output_fcsv_path, "w") as f:
-        f.writelines(header)
-        for i, line in enumerate(data_lines):
-            parts = line.strip().split(",")
-            while len(parts) < 12:
-                parts.append("")
-            parts[11] = str(atlas_labels[i])
-            f.write(",".join(parts) + "\n")
+    # 2. Write the file safely
+    with open(output_fcsv_path, "w", newline="") as f_out:
+        # Write header first
+        f_out.writelines(header)
+
+        # Use csv.writer to handle the rows
+        # QUOTE_MINIMAL will automatically wrap the label in quotes if it contains a comma
+        writer = csv.writer(f_out, quoting=csv.QUOTE_MINIMAL)
+        reader = csv.reader(data_lines)
+
+        for i, row in enumerate(reader):
+            # Ensure the row has at least 12 columns
+            while len(row) < 12:
+                row.append("")
+
+            # Update the label at index 11
+            row[11] = str(atlas_labels[i])
+
+            # Write the row (csv.writer handles the delimiter joining)
+            writer.writerow(row)
+
 
 FCSV_COLUMNS = [
     "id",
@@ -227,8 +249,10 @@ FCSV_COLUMNS = [
     "associatedNodeID",
 ]
 
+
 def load_fcsv(path):
     return pd.read_csv(path, sep=",", comment="#", header=None, names=FCSV_COLUMNS)
+
 
 if __name__ == "__main__":
 
@@ -237,20 +261,18 @@ if __name__ == "__main__":
     native_df = load_fcsv(snakemake.input.native_coords)
     mni_df = load_fcsv(snakemake.input.mni_coords)
     templateflow_paths = snakemake.input.templateflow_paths
-
+    dseg_nii = nib.load(snakemake.input.atlas_segmentation_in_native)
     # Read the file paths from the template_txt
     with open(templateflow_paths, "r") as f:
         lines = f.readlines()
     atlas_labels = lines[2].strip().split(":")[1].strip()
-    dseg_nii = nib.load(lines[1].strip().split(":")[1].strip())
     df_atlas = pd.read_csv(atlas_labels, sep="\t")
 
     tissue_type = "Unknown"
-     # Initialize defaults in case GWmatter_labels is False
+    # Initialize defaults in case GWmatter_labels is False
     num_coords = len(native_df)
     tissue_type = ["Unknown"] * num_coords
     tissue_probs = [(np.nan, np.nan, np.nan)] * num_coords
-
 
     if snakemake.params.GWmatter_labels:
         tissue_type = white_vs_grey_label(
@@ -260,7 +282,7 @@ if __name__ == "__main__":
             native_df[["x", "y", "z"]].values,
             snakemake.input.native_prob_seg_GM,
             snakemake.input.native_prob_seg_WM,
-            snakemake.input.native_prob_seg_CSF
+            snakemake.input.native_prob_seg_CSF,
         )
 
     atlas_labels = lookup_atlas_label(

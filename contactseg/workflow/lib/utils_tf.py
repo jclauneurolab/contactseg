@@ -1,6 +1,7 @@
 import os
 from appdirs import AppDirs
 
+
 def get_cache_dir():
     if "CONTACTSEG_CACHE_DIR" in os.environ.keys():
         cache_dir = os.environ["CONTACTSEG_CACHE_DIR"]

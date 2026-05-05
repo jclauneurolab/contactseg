@@ -8,6 +8,7 @@ try:
 except ImportError:
     from workflow.lib import utils_tf as utils_tf
 
+
 configfile: "config/snakebids.yml"
 
 
@@ -28,6 +29,7 @@ inputs = snakebids.generate_inputs(
 wildcard_constraints:
     **snakebids.get_wildcard_constraints(config["pybids_inputs"]),
 
+
 # ----
 wildcard_constraints:
     desc="[a-zA-Z0-9]+",
@@ -40,7 +42,9 @@ wildcard_constraints:
     label="[a-zA-Z0-9]+",
     template="[a-zA-Z0-9]+",
 
+
 cache_dir = utils_tf.get_cache_dir()
+
 
 include: "rules/templateflow.smk"
 include: "rules/common.smk"

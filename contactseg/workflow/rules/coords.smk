@@ -84,28 +84,29 @@ if config["label"]:
         script:
             "../scripts/generate_tsv.py"
 
+
 if config["atlas_labels"]:
-   
 
     def get_smriprep_dseg(wildcards):
         smriprep_dir = config.get("SMRIPREP_DIR") or config.get("SMRIPREP-DIR")
         if smriprep_dir:
-            session = getattr(wildcards, "session", "pre") 
+            session = getattr(wildcards, "session", "pre")
             return f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_dseg.nii.gz"
-        return [] 
+        return []
+
     def get_smriprep_probseg(label):
         def get_probseg(wildcards):
             smriprep_dir = config.get("SMRIPREP_DIR") or config.get("SMRIPREP-DIR")
             if smriprep_dir:
-                session = getattr(wildcards, "session", "pre") 
+                session = getattr(wildcards, "session", "pre")
                 return f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_label-{label}_probseg.nii.gz"
             return []
-        return get_probseg
 
+        return get_probseg
 
     rule lookup_atlas_labels:
         input:
-            mni_coords=bids(  
+            mni_coords=bids(
                 root=config["output_dir"],
                 suffix="mni_transformed_contactseg.fcsv",
                 datatype="atlas",
@@ -125,10 +126,9 @@ if config["atlas_labels"]:
             ),
             templateflow_paths="resources/templateflow_template.txt",
             native_dseg=get_smriprep_dseg,
-            native_prob_seg_GM =get_smriprep_probseg("GM"),
-            native_prob_seg_WM =get_smriprep_probseg("WM"),
-            native_prob_seg_CSF =get_smriprep_probseg("CSF"),
-
+            native_prob_seg_GM=get_smriprep_probseg("GM"),
+            native_prob_seg_WM=get_smriprep_probseg("WM"),
+            native_prob_seg_CSF=get_smriprep_probseg("CSF"),
         output:
             atlas_labelled_t1w_contactseg=bids(
                 root=config["output_dir"],
@@ -136,7 +136,7 @@ if config["atlas_labels"]:
                 datatype="atlas",
                 **inputs["post_ct"].wildcards,
             ),
-             csv_file=bids(
+            csv_file=bids(
                 root=config["output_dir"],
                 suffix="atlas_labelled_contactseg.csv",
                 datatype="atlas",
@@ -144,8 +144,6 @@ if config["atlas_labels"]:
             ),
         params:
             fuzzy_dist=2,
-            GWmatter_labels = config["SMRIPREP_DIR"]
+            GWmatter_labels=config["SMRIPREP_DIR"],
         script:
             "../scripts/lookup_atlas_labels.py"
-
-            

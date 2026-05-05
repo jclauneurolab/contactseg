@@ -6,9 +6,7 @@ from snakebids import bidsapp, plugins
 
 # Import your utils module
 try:
-    from contactseg.workflow.lib import (
-        utils_tf as utils_tf,
-    )
+    from contactseg.workflow.lib import utils_tf as utils_tf
 except ImportError:
     from workflow.lib import utils_tf as utils_tf
 
@@ -40,6 +38,7 @@ if "SNAKEMAKE_CONDA_PREFIX" not in os.environ:
 def get_parser():
     """Exposes parser for sphinx doc generation, cwd is the docs dir"""
     return app.build_parser().parser
+
 
 if __name__ == "__main__":
     app.run()

@@ -69,6 +69,7 @@ rule get_registration_matrix:
     script:
         "../scripts/registration.py"
 
+
 if not config.get("SMRIPREP_DIR"):
 
     rule get_t1w_to_mni_matrix:
@@ -82,7 +83,7 @@ if not config.get("SMRIPREP_DIR"):
                 extension=".nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
-            templateflow_paths="resources/templateflow_template.txt"
+            templateflow_paths="resources/templateflow_template.txt",
         output:
             xfm_slicer=bids(
                 root=config["output_dir"],
@@ -107,6 +108,7 @@ if not config.get("SMRIPREP_DIR"):
             ),
         script:
             "../scripts/affine.py"
+
 
 if config["manual_reg_matrix"]:
 
@@ -143,5 +145,3 @@ if config["manual_reg_matrix"]:
             ),
         script:
             "../scripts/apply_registration.py"
-
- 
