@@ -3,9 +3,13 @@ rule get_coords:
         model_seg=rules.model_inference.output.contact_seg,
     output:
         model_coords=bids(
-            root=config["output_dir"],
-            suffix="contactseg.fcsv",
-            datatype="slicer_fcsv",
+            root=deriv_root,
+            datatype="ieeg",
+            suffix="coords",
+            desc="model",
+            session="post",
+            space="ct",
+            extension=".fcsv",
             **inputs["post_ct"].wildcards,
         ),
     group:
@@ -22,9 +26,13 @@ if config["transform"]:
             transformation_matrix=get_reg_matrix(),
         output:
             transformed_coords=bids(
-                root=config["output_dir"],
-                suffix="transformed_contactseg.fcsv",
-                datatype="slicer_fcsv",
+                root=deriv_root,
+                datatype="ieeg",
+                suffix="coords",
+                desc="transformed",
+                session="post",
+                space="T1w",
+                extension=".fcsv",
                 **inputs["post_ct"].wildcards,
             ),
         group:
@@ -46,9 +54,13 @@ if config["label"]:
             ),
         output:
             labelled_coords=bids(
-                root=config["output_dir"],
-                suffix="labelled_contactseg.fcsv",
-                datatype="slicer_fcsv",
+                root=deriv_root,
+                datatype="ieeg",
+                suffix="coords",
+                desc="labeled",
+                space="T1w",
+                session="post",
+                extension=".fcsv",
                 **inputs["post_ct"].wildcards,
             ),
         params:
@@ -64,7 +76,7 @@ if config["label"]:
             ref_ct=get_registered_ct_image(),
         output:
             electrodes_tsv=bids(
-                root=config["output_dir"],
+                root=deriv_root,
                 datatype="ieeg",
                 space="T1w",
                 suffix="electrodes",
@@ -73,7 +85,7 @@ if config["label"]:
                 **inputs["post_ct"].wildcards,
             ),
             coordsystem_json=bids(
-                root=config["output_dir"],
+                root=deriv_root,
                 datatype="ieeg",
                 space="T1w",
                 suffix="coordsystem",
@@ -107,23 +119,23 @@ if config["atlas_labels"]:
     rule lookup_atlas_labels:
         input:
             mni_coords=bids(
-                root=config["output_dir"],
-                suffix="mni_transformed_contactseg.fcsv",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="ieeg",
+                suffix="coords",
+                extension=".fcsv",
+                space="TEMPLATE",
+                session="post",
+                desc="labeled",
                 **inputs["post_ct"].wildcards,
             ),
-            native_coords=bids(
-                root=config["output_dir"],
-                suffix="labelled_contactseg.fcsv",
-                datatype="slicer_fcsv",
-                **inputs["post_ct"].wildcards,
-            ),
+            native_coords=rules.label_coords.output.labelled_coords,
             atlas_segmentation_in_native=bids(
-                root=config["output_dir"],
-                suffix="dseg.nii.gz",
-                desc="CerebA",
-                space="t1w",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="anat",
+                suffix="dseg",
+                desc="ATLAS",
+                space="T1w",
+                extension=".nii.gz",
                 **inputs["post_ct"].wildcards,
             ),
             atlas_segmentation_in_mni=str(
@@ -140,15 +152,22 @@ if config["atlas_labels"]:
             native_prob_seg_CSF=get_smriprep_probseg("CSF"),
         output:
             atlas_labelled_t1w_contactseg=bids(
-                root=config["output_dir"],
-                suffix="atlas_labelled_contactseg.fcsv",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="ieeg",
+                suffix="coords",
+                session="post",
+                space="T1w",
+                desc="anatomical_labels",
+                extension=".fcsv",
                 **inputs["post_ct"].wildcards,
             ),
             csv_file=bids(
-                root=config["output_dir"],
-                suffix="atlas_labelled_contactseg.csv",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="ieeg",
+                suffix="coords",
+                session="post",
+                desc="anatomical_labels",
+                extension=".csv",
                 **inputs["post_ct"].wildcards,
             ),
         params:

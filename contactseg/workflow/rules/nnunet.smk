@@ -53,8 +53,9 @@ rule model_inference:
         out_folder="templbl",
     output:
         contact_seg=bids(
-            root=config["output_dir"],
+            root=deriv_root,
             suffix="dseg.nii.gz",
+            session="post",
             desc="contacts_nnUNet",
             **inputs["post_ct"].wildcards,
         ),

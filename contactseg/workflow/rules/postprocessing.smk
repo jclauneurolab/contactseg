@@ -1,27 +1,21 @@
 rule register_contacts:
     input:
         in_im=bids(
-            root=config["output_dir"],
+            root=deriv_root,
             suffix="dseg.nii.gz",
             desc="contacts_nnUNet",
+            session="post",
             **inputs["post_ct"].wildcards,
         ),
-        ref_im=bids(
-            root=config["output_dir"],
-            suffix="T1w",
-            desc="n4",
-            datatype="anat",
-            session="pre",
-            extension=".nii.gz",
-            **inputs["pre_t1w"].wildcards,
-        ),
+        ref_im=rules.n4biascorr.output.corrected_t1w,
         transform_matrix=get_reg_matrix(),
     output:
         out_im=bids(
-            root=config["output_dir"],
+            root=deriv_root,
             suffix="dseg.nii.gz",
             space="T1w",
             desc="contacts_nnUNet",
+            session="post",
             **inputs["post_ct"].wildcards,
         ),
     script:
@@ -31,19 +25,15 @@ rule register_contacts:
 rule contacts_qc:
     input:
         ct_img=get_registered_ct_image(),
-        t1w_img=bids(
-            root=config["output_dir"],
-            suffix="T1w",
-            desc="n4",
-            datatype="anat",
-            session="pre",
-            extension=".nii.gz",
-            **inputs["pre_t1w"].wildcards,
-        ),
+        t1w_img=rules.n4biascorr.output.corrected_t1w,
         contact_fcsv_labelled=bids(
-            root=config["output_dir"],
-            datatype="slicer_fcsv",
-            suffix="labelled_contactseg.fcsv",
+            root=deriv_root,
+            datatype="ieeg",           
+            suffix="coords",
+            session="post",
+            space="T1w",
+            extension=".fcsv",
+            desc="labeled",
             **inputs["post_ct"].wildcards,
         ),
         planned_fcsv=bids(
@@ -54,7 +44,7 @@ rule contacts_qc:
         ),
     output:
         html=bids(
-            root=config["output_dir"],
+            root=deriv_root,
             datatype="qc",
             desc="contactseg",
             suffix="qc.html",
@@ -69,10 +59,11 @@ if not config.get("SMRIPREP_DIR"):
     rule nonlinear_t1_to_mni:
         input:
             t1_in_mni_img=bids(
-                root=config["output_dir"],
-                datatype="atlas",
-                space="MNI",
-                suffix="T1w.nii.gz",
+                root=deriv_root,
+                datatype="anat",
+                space="TEMPLATE",
+                suffix="T1w",
+                extension=".nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
             mni_template=str(
@@ -81,24 +72,27 @@ if not config.get("SMRIPREP_DIR"):
             ),
         output:
             forward_warp=bids(
-                root=config["output_dir"],
-                desc="t1_to_mni",
-                suffix="Warp.nii.gz",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="anat",
+                desc="T1w2MNI",
+                suffix="xfm",
+                extension=".nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
             inverse_warp=bids(
-                root=config["output_dir"],
-                desc="mni_to_t1",
-                suffix="InverseWarp.nii.gz",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="anat",
+                desc="MNI2T1w",
+                suffix="xfm",
+                extension=".nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
             affine_syn=bids(
-                root=config["output_dir"],
-                desc="t1_to_mni",
-                suffix="Affine.mat",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="anat",
+                desc="nonlinear_T1w2MNI",
+                suffix="xfm",
+                extension=".mat",
                 **inputs["pre_t1w"].wildcards,
             ),
         script:
@@ -115,24 +109,27 @@ def get_forward_transforms(wildcards):
     else:
         return [
             bids(
-                root=config["output_dir"],
-                desc="t1_to_mni",
-                suffix="Warp.nii.gz",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="anat",
+                desc="T1w2MNI",
+                suffix="xfm",
+                extension=".nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
             bids(
-                root=config["output_dir"],
-                desc="t1_to_mni",
-                suffix="Affine.mat",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="anat",
+                desc="nonlinear_T1w2MNI",
+                suffix="xfm",
+                extension=".mat",
                 **inputs["pre_t1w"].wildcards,
             ),
             bids(
-                root=config["output_dir"],
-                datatype="atlas",
-                desc="from_T1w-to-MNI",
-                suffix="slicer.mat",
+                root=deriv_root,
+                datatype="anat",
+                desc="from_T1w-to-TEMPLATE",
+                suffix="xfm",
+                extension=".mat",
                 **inputs["pre_t1w"].wildcards,
             ),
         ]
@@ -148,24 +145,27 @@ def get_inverse_transforms(wildcards):
     else:
         return [
             bids(
-                root=config["output_dir"],
-                datatype="atlas",
-                desc="from_T1w-to-MNI",
-                suffix="slicer.mat",
+                root=deriv_root,
+                datatype="anat",
+                desc="from_T1w-to-TEMPLATE",
+                suffix="xfm",
+                extension=".mat",
                 **inputs["pre_t1w"].wildcards,
             ),
             bids(
-                root=config["output_dir"],
-                desc="t1_to_mni",
-                suffix="Affine.mat",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="anat",
+                desc="nonlinear_T1w2MNI",
+                suffix="xfm",
+                extension=".mat",
                 **inputs["pre_t1w"].wildcards,
             ),
             bids(
-                root=config["output_dir"],
-                desc="mni_to_t1",
-                suffix="InverseWarp.nii.gz",
-                datatype="atlas",
+                root=deriv_root,
+                datatype="anat",
+                desc="MNI2T1w",
+                suffix="xfm",
+                extension=".nii.gz",
                 **inputs["pre_t1w"].wildcards,
             ),
         ]
@@ -174,17 +174,25 @@ def get_inverse_transforms(wildcards):
 rule apply_full_transformation:
     input:
         coords=bids(
-            root=config["output_dir"],
-            suffix="labelled_contactseg.fcsv",
-            datatype="slicer_fcsv",
+            root=deriv_root,
+            datatype="ieeg",
+            suffix="coords",
+            desc="labeled",
+            session="post",
+            space="T1w",
+            extension=".fcsv",
             **inputs["post_ct"].wildcards,
         ),
         transforms=get_forward_transforms,
     output:
         output_coords=bids(
-            root=config["output_dir"],
-            suffix="mni_transformed_contactseg.fcsv",
-            datatype="atlas",
+            root=deriv_root,
+            datatype="ieeg",
+            suffix="coords",
+            extension=".fcsv",
+            session="post",
+            space="TEMPLATE",
+            desc="labeled",
             **inputs["post_ct"].wildcards,
         ),
     script:
@@ -197,23 +205,16 @@ rule transform_atlas_to_t1:
             Path(workflow.basedir).parent.parent
             / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii"
         ),
-        t1_image=bids(
-            root=config["output_dir"],
-            suffix="T1w",
-            desc="n4",
-            datatype="anat",
-            session="pre",
-            extension=".nii.gz",
-            **inputs["pre_t1w"].wildcards,
-        ),
+        t1_image=rules.n4biascorr.output.corrected_t1w,
         transforms=get_inverse_transforms,
     output:
         atlas_in_t1=bids(
-            root=config["output_dir"],
-            suffix="dseg.nii.gz",
-            desc="CerebA",
-            space="t1w",
-            datatype="atlas",
+            root=deriv_root,
+            datatype="anat",
+            suffix="dseg",
+            extension=".nii.gz",
+            desc="ATLAS",
+            space="T1w",
             **inputs["post_ct"].wildcards,
         ),
     script:
