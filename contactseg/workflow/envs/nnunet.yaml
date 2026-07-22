@@ -1,10 +1,12 @@
----
 name: nnunet-gpu
-channels: [pytorch, conda-forge, defaults]
+channels:
+  - conda-forge
+  - defaults
 dependencies:
   - python=3.10
-  - pytorch
   - pip
   - pip:
+      - https://download.pytorch.org/whl/cu121/torch-2.3.1%2Bcu121-cp310-cp310-linux_x86_64.whl
+      - https://download.pytorch.org/whl/cu121/torchvision-0.18.1%2Bcu121-cp310-cp310-linux_x86_64.whl
+      - https://download.pytorch.org/whl/cu121/torchaudio-2.3.1%2Bcu121-cp310-cp310-linux_x86_64.whl
       - nnunetv2>=2.5.1
-      
