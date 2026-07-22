@@ -45,6 +45,7 @@ snakebids = "==0.14.0"
 appdirs = ">=1.4.4"
 pulp = "<2.8.0"
 pyvista = ">=0.44.2"
+conda = ">=25.5.0,<26"
 
 [tool.pixi.feature.dev.dependencies]
 flake8 = ">=4.0.1"
