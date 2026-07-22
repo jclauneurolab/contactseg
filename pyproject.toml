@@ -70,3 +70,6 @@ include = '\.smk$|^Snakefile'
 [tool.pixi.tasks]
 quality_check = "isort contactseg/*.py -c && black contactseg --check && snakefmt contactseg --check"
 quality_fix = "isort contactseg/*.py && black contactseg && snakefmt contactseg"
+
+[tool.pixi.dependencies]
+git-lfs = ">=3.7.1,<4"
