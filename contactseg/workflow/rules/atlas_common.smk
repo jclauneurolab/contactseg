@@ -170,22 +170,32 @@ def bridged_sources():
 
 
 def find_derivatives_anat(source, subject):
-    """Path to the anatomical ``source`` was computed on, for ``subject``."""
-    relpath = config["derivatives_anat"][source].format(subject=subject)
+    """Path to the anatomical ``source`` was computed on, for ``subject``.
+
+    The image can live inside the derivatives dataset (its own reference
+    image, which is by definition the frame its transforms are expressed in)
+    or in the raw BIDS dataset (the acquisition that was fed to it). Which one
+    is used is set per source in the ``derivatives_anat`` config block.
+    """
+    session = config["derivatives_session"]
+    root, relpath = atlas_lib.get_derivatives_anat_spec(config, source)
+    relpath = relpath.format(subject=subject, session=session)
+
+    if root == "bids":
+        return atlas_lib.find_subject_file(
+            config["bids_dir"], subject, relpath, session=session
+        )
 
     if source == "freesurfer":
         return atlas_lib.get_freesurfer_file(
-            config,
-            subject,
-            relpath,
-            session=config["derivatives_session"],
+            config, subject, relpath, session=session
         )
 
     return atlas_lib.find_subject_file(
         atlas_lib.get_derivatives_dir(config, "smriprep_dir"),
         subject,
         relpath,
-        session=config["derivatives_session"],
+        session=session,
     )
 
 

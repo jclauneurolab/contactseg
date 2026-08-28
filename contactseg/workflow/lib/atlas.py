@@ -74,6 +74,55 @@ def get_derivatives_dir(config, key):
     return Path(deriv_dir)
 
 
+def get_derivatives_anat_spec(config, source):
+    """Return ``(root, path)`` for the anatomical ``source`` was computed on.
+
+    The config entry is either a plain path, resolved inside the derivatives
+    dataset, or a mapping that also names the root it belongs to::
+
+        derivatives_anat:
+          smriprep: "anat/sub-{subject}_desc-preproc_T1w.nii.gz"
+          freesurfer:
+            root: bids
+            path: "anat/sub-{subject}_ses-{session}_run-01_T1w.nii.gz"
+
+    Either way the path is relative to the subject (or subject/session)
+    directory of that root, so the two forms read the same way.
+
+    Parameters
+    ----------
+    config : dict
+        Workflow configuration.
+    source : str
+        Either ``smriprep`` or ``freesurfer``.
+
+    Returns
+    -------
+    tuple of (str, str)
+        The root name (``bids`` or ``derivatives``) and the path template.
+    """
+
+    try:
+        entry = config["derivatives_anat"][source]
+    except KeyError as err:
+        raise ValueError(
+            f"no derivatives_anat entry for '{source}'; add one naming the "
+            "image that dataset was computed on"
+        ) from err
+
+    if isinstance(entry, str):
+        return "derivatives", entry
+
+    root = entry.get("root", "derivatives")
+    if root not in ("bids", "derivatives"):
+        raise ValueError(
+            f"derivatives_anat[{source}].root must be 'bids' or "
+            f"'derivatives', not '{root}'"
+        )
+
+    return root, entry["path"]
+
+
 def find_subject_file(root, subject, relpath, session=None):
     """Locate ``relpath`` for ``subject`` inside a derivatives dataset.
 

@@ -209,6 +209,20 @@ derivatives_session: pre
 # frame its transforms, segmentations and surfaces live in. With
 # --derivatives_reg rigid this image is registered to the contactseg T1w and
 # the resulting 4x4 RAS matrix bridges the two.
+#
+# A bare string is resolved inside the derivatives dataset. To point at the raw
+# acquisition in the BIDS dataset instead -- the non-contrast T1w sMRIPrep or
+# FreeSurfer was run on, say -- give the entry a root:
+#
+#   freesurfer:
+#     root: bids
+#     path: "anat/sub-{subject}_ses-{session}_run-01_T1w.nii.gz"
+#
+# Paths are relative to the subject (or subject/session) directory of that
+# root, and may use {subject} and {session}. Prefer the derivatives dataset's
+# own reference image when it has one: that image *is* the frame its transforms
+# were computed in, whereas a raw acquisition only matches it when the pipeline
+# used exactly that one image.
 derivatives_anat:
   smriprep: "anat/sub-{subject}_desc-preproc_T1w.nii.gz"
   freesurfer: "mri/orig.mgz"

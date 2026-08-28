@@ -75,3 +75,44 @@ def test_sessionless_path_is_returned_when_nothing_exists(tmp_path):
     resolved = atlas.find_subject_file(tmp_path, "P001", "anat/xfm.h5", session="pre")
 
     assert resolved == str(tmp_path / "sub-P001" / "anat" / "xfm.h5")
+
+
+def test_derivatives_anat_defaults_to_the_derivatives_root(config):
+    config["derivatives_anat"] = {"freesurfer": "mri/orig.mgz"}
+
+    assert atlas.get_derivatives_anat_spec(config, "freesurfer") == (
+        "derivatives",
+        "mri/orig.mgz",
+    )
+
+
+def test_derivatives_anat_can_point_into_the_bids_dataset(config):
+    config["derivatives_anat"] = {
+        "freesurfer": {
+            "root": "bids",
+            "path": "anat/sub-{subject}_ses-{session}_run-01_T1w.nii.gz",
+        }
+    }
+
+    root, path = atlas.get_derivatives_anat_spec(config, "freesurfer")
+
+    assert root == "bids"
+    assert path.format(subject="P167", session="pre") == (
+        "anat/sub-P167_ses-pre_run-01_T1w.nii.gz"
+    )
+
+
+def test_an_unknown_derivatives_anat_root_is_rejected(config):
+    config["derivatives_anat"] = {
+        "freesurfer": {"root": "somewhere", "path": "mri/orig.mgz"}
+    }
+
+    with pytest.raises(ValueError, match="bids"):
+        atlas.get_derivatives_anat_spec(config, "freesurfer")
+
+
+def test_a_missing_derivatives_anat_entry_says_what_to_add(config):
+    config["derivatives_anat"] = {}
+
+    with pytest.raises(ValueError, match="smriprep"):
+        atlas.get_derivatives_anat_spec(config, "smriprep")

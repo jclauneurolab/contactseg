@@ -70,13 +70,38 @@ image's scanner RAS frame, offset from `pre_t1w` by however much the patient
 moved between the two scans. Reading them as if the frames agreed puts every
 contact off by that offset, silently.
 
-The image each dataset was computed on is named in the config:
+The image each dataset was computed on is named in the config. A bare string is
+resolved inside the derivatives dataset:
 
 ```yaml
 derivatives_anat:
   smriprep: "anat/sub-{subject}_desc-preproc_T1w.nii.gz"
   freesurfer: "mri/orig.mgz"
 ```
+
+If the image the pipeline was run on is the raw acquisition in your BIDS
+dataset — the non-contrast T1w sitting next to the contrast-enhanced run that
+`pre_t1w` points at — name it with a `root` instead:
+
+```yaml
+derivatives_anat:
+  freesurfer:
+    root: bids
+    path: "anat/sub-{subject}_ses-{session}_run-01_T1w.nii.gz"
+```
+
+Paths are relative to the subject (or subject/session) directory of whichever
+root, so both forms read the same way, and `{subject}` and `{session}` are
+filled in per subject (`{session}` comes from `derivatives_session`).
+
+Which to prefer: the derivatives dataset's own reference image, when it has
+one. sMRIPrep's `desc-preproc_T1w` and FreeSurfer's `orig.mgz` *are*, by
+definition, the frames their transforms and segmentations are expressed in. A
+raw acquisition matches that frame only when the pipeline consumed exactly that
+one image — feed sMRIPrep two T1w runs and it averages them, and the averaged
+reference is not identical to either input. Point at the BIDS image when the
+derivatives directory does not ship a reference image, or when you want the
+bridge pinned to a specific acquisition and know only that one was used.
 
 `--derivatives_reg rigid` (the default) registers that image to the contactseg
 T1w once per dataset and writes a 4x4 RAS matrix, in exactly the convention the
