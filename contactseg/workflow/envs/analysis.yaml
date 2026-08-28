@@ -10,3 +10,5 @@ dependencies:
   - matplotlib
   - svgutils
   - nibabel
+  - pynrrd
+  - openpyxl
