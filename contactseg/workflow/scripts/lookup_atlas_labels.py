@@ -370,6 +370,13 @@ def lookup_atlas_labels(
     vol = np.rint(np.asarray(seg.dataobj)).astype(int)
     affine = seg.affine
 
+    # printed up front so a long run is distinguishable from a stuck one
+    print(
+        f"[lookup] {atlas_dseg}: {'x'.join(str(n) for n in vol.shape)} grid, "
+        f"{len(coords)} contacts, sigma {sigma:.2f} mm",
+        flush=True,
+    )
+
     rows = []
     for i, xyz in enumerate(coords):
         ijk = np.rint(np.linalg.inv(affine) @ np.r_[xyz, 1.0])[:3].astype(int)

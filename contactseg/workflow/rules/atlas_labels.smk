@@ -144,7 +144,7 @@ if config["export_nrrd"]:
         group:
             "subj"
         conda:
-            "../envs/analysis.yaml"
+            "../envs/nrrd.yaml"
         params:
             orientation=config["nrrd_orientation"],
         script:
