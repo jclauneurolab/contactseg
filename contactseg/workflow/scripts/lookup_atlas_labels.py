@@ -221,43 +221,60 @@ def hemi_of(name):
     return "?"
 
 
-def neighbourhood(vol, affine, xyz, radius):
-    """Return the voxel indices and squared distances within ``radius`` mm."""
-    center = (np.linalg.inv(affine) @ np.r_[xyz, 1.0])[:3]
-    voxel_size = np.linalg.norm(affine[:3, :3], axis=0)
-    radius_vox = np.ceil(radius / voxel_size).astype(int)
-    corner = np.round(center).astype(int)
+class Neighbourhood:
+    """The voxels within a radius of a point, indexed cheaply.
 
-    low = np.maximum(corner - radius_vox, 0)
-    high = np.minimum(corner + radius_vox + 1, vol.shape)
-    if np.any(low >= high):
-        return None, None
+    The offsets inside a sphere are the same for every contact, so they are
+    built once per radius rather than per contact. Only the sub-voxel remainder
+    between the contact and the nearest voxel centre changes, which keeps the
+    distances exact while turning each lookup into an array index. At sub-mm
+    resolution the 10 mm search box holds hundreds of thousands of voxels, so
+    rebuilding it per contact is what makes a large volume slow.
+    """
 
-    grid = np.meshgrid(
-        np.arange(low[0], high[0]),
-        np.arange(low[1], high[1]),
-        np.arange(low[2], high[2]),
-        indexing="ij",
-    )
-    ijk = np.stack([axis.ravel() for axis in grid], axis=1)
-    world = (affine @ np.c_[ijk, np.ones(len(ijk))].T).T[:, :3]
-    dist_sq = ((world - xyz) ** 2).sum(1)
+    def __init__(self, affine, radius):
+        self.affine = affine
+        self.radius = radius
+        self.inv_affine = np.linalg.inv(affine)
 
-    keep = dist_sq <= radius**2
-    if not keep.any():
-        return None, None
+        voxel_size = np.linalg.norm(affine[:3, :3], axis=0)
+        radius_vox = np.ceil(radius / voxel_size).astype(int)
+        ranges = [np.arange(-n, n + 1) for n in radius_vox]
+        offsets = np.stack(np.meshgrid(*ranges, indexing="ij"), axis=-1).reshape(-1, 3)
 
-    return ijk[keep], dist_sq[keep]
+        # world-space displacement of each offset from the centre voxel
+        self.offsets = offsets
+        self.displacement = offsets @ affine[:3, :3].T
+
+    def at(self, vol, xyz):
+        """Return the voxel indices and squared distances around ``xyz``."""
+        center = np.rint(self.inv_affine @ np.r_[xyz, 1.0])[:3].astype(int)
+        center_world = (self.affine @ np.r_[center, 1.0])[:3]
+
+        # the contact does not sit on a voxel centre; carrying that remainder
+        # keeps the distances exact rather than rounded to the grid
+        remainder = np.asarray(xyz) - center_world
+        dist_sq = ((self.displacement - remainder) ** 2).sum(1)
+
+        keep = dist_sq <= self.radius**2
+        ijk = self.offsets[keep] + center
+        dist_sq = dist_sq[keep]
+
+        inside = ((ijk >= 0) & (ijk < np.array(vol.shape))).all(1)
+        if not inside.any():
+            return None, None
+
+        return ijk[inside], dist_sq[inside]
 
 
-def gaussian_vote(vol, affine, xyz, sigma, n_sigma):
+def gaussian_vote(neighbourhood, vol, xyz, sigma):
     """Gaussian-weighted label histogram around the world point ``xyz``.
 
     Weights sum to one over every sampled voxel, background included, so a
     contact at the edge of the brain keeps probability mass on Unknown instead
     of being renormalised into false confidence.
     """
-    ijk, dist_sq = neighbourhood(vol, affine, xyz, n_sigma * sigma)
+    ijk, dist_sq = neighbourhood.at(vol, xyz)
     if ijk is None:
         return {0: 1.0}
 
@@ -281,9 +298,9 @@ def norm_entropy(probs):
     return float(-(values * np.log(values)).sum() / np.log(len(values)))
 
 
-def dist_to_boundary(vol, affine, xyz, ref_label, max_dist):
+def dist_to_boundary(neighbourhood, vol, xyz, ref_label):
     """Distance to the nearest voxel labelled differently to ``ref_label``."""
-    ijk, dist_sq = neighbourhood(vol, affine, xyz, max_dist)
+    ijk, dist_sq = neighbourhood.at(vol, xyz)
     if ijk is None:
         return np.nan
 
@@ -295,9 +312,9 @@ def dist_to_boundary(vol, affine, xyz, ref_label, max_dist):
     return float(np.sqrt(differing.min()))
 
 
-def nearest_labelled(vol, affine, xyz, max_dist):
+def nearest_labelled(neighbourhood, vol, xyz):
     """Nearest non-zero label and its distance, for contacts in background."""
-    ijk, dist_sq = neighbourhood(vol, affine, xyz, max_dist)
+    ijk, dist_sq = neighbourhood.at(vol, xyz)
     if ijk is None:
         return 0, np.nan
 
@@ -367,7 +384,13 @@ def lookup_atlas_labels(
     names = contacts[11].astype(str)
 
     seg = nib.load(atlas_dseg)
-    vol = np.rint(np.asarray(seg.dataobj)).astype(int)
+
+    # a label volume is already integral: going through float64 and int64
+    # doubles the memory of a high-resolution segmentation for nothing
+    vol = np.asanyarray(seg.dataobj)
+    if vol.dtype.kind == "f":
+        vol = np.rint(vol)
+    vol = vol.astype(np.int32, copy=False)
     affine = seg.affine
 
     # printed up front so a long run is distinguishable from a stuck one
@@ -377,6 +400,9 @@ def lookup_atlas_labels(
         flush=True,
     )
 
+    vote_region = Neighbourhood(affine, n_sigma * sigma)
+    search_region = Neighbourhood(affine, max_dist)
+
     rows = []
     for i, xyz in enumerate(coords):
         ijk = np.rint(np.linalg.inv(affine) @ np.r_[xyz, 1.0])[:3].astype(int)
@@ -384,7 +410,7 @@ def lookup_atlas_labels(
         hard = int(vol[tuple(ijk)]) if in_bounds else 0
         hard_name = lut.get(hard, f"idx{hard}")
 
-        probs = gaussian_vote(vol, affine, xyz, sigma, n_sigma)
+        probs = gaussian_vote(vote_region, vol, xyz, sigma)
         ranked = sorted(probs.items(), key=lambda item: -item[1])
         top_index, p_top = ranked[0]
         second_index, p_second = ranked[1] if len(ranked) > 1 else (0, 0.0)
@@ -395,7 +421,7 @@ def lookup_atlas_labels(
             tissue[group] = tissue.get(group, 0.0) + prob
 
         if hard == 0:
-            near_index, near_dist = nearest_labelled(vol, affine, xyz, max_dist)
+            near_index, near_dist = nearest_labelled(search_region, vol, xyz)
         else:
             near_index, near_dist = hard, 0.0
 
@@ -416,7 +442,7 @@ def lookup_atlas_labels(
                 "p_CSF": tissue.get("CSF", 0.0) if freesurfer_lut else np.nan,
                 "n_structures": len(probs),
                 "dist_to_boundary_mm": (
-                    dist_to_boundary(vol, affine, xyz, hard, max_dist)
+                    dist_to_boundary(search_region, vol, xyz, hard)
                     if in_bounds
                     else np.nan
                 ),
