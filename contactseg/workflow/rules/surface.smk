@@ -160,6 +160,7 @@ if get_surface_atlases():
             ref_vol=rules.n4biascorr.output.corrected_t1w,
         output:
             atlas_dseg=get_atlas_dseg_in_native(),
+            lut=get_surface_atlas_lut(),
         wildcard_constraints:
             atlas="|".join(get_surface_atlases()),
         group:
@@ -168,6 +169,7 @@ if get_surface_atlases():
             "../envs/surface.yaml"
         params:
             key_offsets=lambda wildcards: get_key_offsets(wildcards.atlas),
+            hemis=config["hemi"],
         script:
             "../scripts/surface_atlas_to_volume.py"
 

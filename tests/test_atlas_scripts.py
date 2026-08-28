@@ -591,3 +591,43 @@ def test_tissue_maps_are_sampled_in_the_derivatives_frame(tmp_path, coords, brid
     expected_x = nib.affines.apply_affine(np.linalg.inv(matrix), contact)[0]
     assert bridged["p_GM"].iloc[0] == pytest.approx((expected_x + 30) / 59, abs=0.02)
     assert bridged["p_GM"].iloc[0] != pytest.approx(plain["p_GM"].iloc[0])
+
+
+def test_surface_atlas_names_come_from_the_gifti_not_a_hard_coded_list(
+    tmp_path,
+):
+    """A parcellation that is not Desikan-Killiany still names its regions.
+
+    The volume labels are the GIFTI keys plus a per-hemisphere offset, so the
+    lookup table has to be built from the same two things rather than assumed.
+    """
+    from annot_to_label_gii import annot_to_label_gii
+    from surface_atlas_to_volume import write_lookup_table
+
+    label_files = []
+    for hemi, names in (
+        ("L", ["unknown", "G_temp_sup-Lateral", "S_calcarine"]),
+        ("R", ["unknown", "G_temp_sup-Lateral", "S_calcarine"]),
+    ):
+        labels = np.array([0, 1, 2, 1], dtype=np.int32)
+        ctab = np.array(
+            [[25, 5, 25, 0, 0], [100, 20, 30, 0, 0], [10, 200, 40, 0, 0]],
+            dtype=np.int32,
+        )
+        ctab[:, 4] = ctab[:, 0] + ctab[:, 1] * 2**8 + ctab[:, 2] * 2**16
+        annot = tmp_path / f"{hemi}.annot"
+        nib.freesurfer.write_annot(str(annot), labels, ctab, names, fill_ctab=False)
+        gii = tmp_path / f"{hemi}.label.gii"
+        annot_to_label_gii(str(annot), str(gii), f"CORTEX_{hemi}")
+        label_files.append(str(gii))
+
+    out = tmp_path / "dseg.tsv"
+    write_lookup_table(label_files, [1000, 2000], ["L", "R"], str(out))
+    table = pd.read_csv(out, sep="\t")
+
+    # keys are offset per hemisphere, names are the atlas's own
+    assert set(table["label"]) == {1001, 1002, 2001, 2002}
+    assert table.loc[table["label"] == 2002, "name"].iloc[0] == "S_calcarine"
+    assert list(table.loc[table["label"] < 2000, "hemi"].unique()) == ["L"]
+    # background is not a region
+    assert 1000 not in set(table["label"])

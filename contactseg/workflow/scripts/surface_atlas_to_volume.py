@@ -13,6 +13,7 @@ from pathlib import Path
 
 import nibabel as nib
 import numpy as np
+import pandas as pd
 
 
 def label_to_volume(label_gii, midthickness, white, pial, ref_vol, output_nii):
@@ -63,8 +64,41 @@ def merge_hemispheres(hemi_niis, key_offsets, output_nii):
     nib.save(out, output_nii)
 
 
+def write_lookup_table(label_gii, key_offsets, hemis, output_tsv):
+    """Write the lookup table for the merged volume, from the label tables.
+
+    The parcel names travel with the GIFTI, so they are read from it rather
+    than assumed from a hard-coded list. A surface atlas whose parcels are not
+    freesurfer's Desikan-Killiany set -- Destrieux, the Yale atlas, anything
+    custom -- then names its regions correctly without further configuration.
+    """
+    rows = []
+    for label_file, offset, hemi in zip(label_gii, key_offsets, hemis):
+        table = nib.load(label_file).labeltable
+        for entry in table.labels:
+            if int(entry.key) == 0:
+                continue
+            rows.append(
+                {
+                    "label": int(entry.key) + offset,
+                    "name": str(entry.label),
+                    "hemi": hemi,
+                }
+            )
+
+    pd.DataFrame(rows).to_csv(output_tsv, sep="\t", index=False)
+
+
 def surface_atlas_to_volume(
-    label_gii, midthickness, white, pial, ref_vol, key_offsets, output_nii
+    label_gii,
+    midthickness,
+    white,
+    pial,
+    ref_vol,
+    key_offsets,
+    hemis,
+    output_nii,
+    output_tsv,
 ):
     """
     Function that maps a surface atlas into subject volume space.
@@ -79,8 +113,12 @@ def surface_atlas_to_volume(
         Reference volume defining the output grid.
     key_offsets : list of int
         Value added to the labels of each hemisphere before merging.
+    hemis : list of str
+        Hemisphere names, in the same order as ``label_gii``.
     output_nii : str
         Path to save the merged segmentation.
+    output_tsv : str
+        Path to save the lookup table naming the merged labels.
 
     Returns
     -------
@@ -103,6 +141,8 @@ def surface_atlas_to_volume(
 
         merge_hemispheres(hemi_niis, key_offsets, output_nii)
 
+    write_lookup_table(label_gii, key_offsets, hemis, output_tsv)
+
 
 if __name__ == "__main__":
     surface_atlas_to_volume(
@@ -112,5 +152,7 @@ if __name__ == "__main__":
         pial=snakemake.input.pial,
         ref_vol=snakemake.input.ref_vol,
         key_offsets=snakemake.params.key_offsets,
+        hemis=snakemake.params.hemis,
         output_nii=snakemake.output.atlas_dseg,
+        output_tsv=snakemake.output.lut,
     )

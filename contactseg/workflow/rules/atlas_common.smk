@@ -306,13 +306,37 @@ def get_atlas_dseg_in_native():
     )
 
 
+def get_surface_atlas_lut():
+    """Lookup table written alongside a surface atlas mapped into the volume."""
+    return bids(
+        root=config["output_dir"],
+        datatype="atlasreg",
+        session="pre",
+        space="T1w",
+        atlas="{atlas}",
+        suffix="dseg",
+        extension=".tsv",
+        **inputs["pre_t1w"].wildcards,
+    )
+
+
 def get_atlas_lut(wildcards):
     """Lookup table for ``wildcards.atlas``.
 
-    Atlases that declare ``FreeSurferColorLUT`` get an empty input: the lookup
-    script falls back to the aseg/aparc table it carries internally, so no
-    freesurfer installation is needed to resolve label names.
+    A surface atlas names its own parcels in the GIFTI label table, so the
+    table generated when it was mapped into the volume is used rather than the
+    config entry: that keeps the names right for parcellations that are not
+    freesurfer's Desikan-Killiany set.
+
+    Atlases that declare ``FreeSurferColorLUT`` otherwise get an empty input,
+    and the lookup script falls back to the aseg/aparc table it carries
+    internally, so no freesurfer installation is needed to resolve names.
     """
+    if wildcards.atlas in get_surface_atlases():
+        return expand(
+            get_surface_atlas_lut(), atlas=wildcards.atlas, allow_missing=True
+        )
+
     entry = atlas_lib.get_atlas_entry(config, wildcards.atlas)
     if entry["lut"] == "FreeSurferColorLUT":
         return []
