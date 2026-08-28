@@ -143,6 +143,117 @@ def get_invert_flags(direction):
     return [True, False] if direction == "template_to_T1w" else [False, False]
 
 
+# ---- derivatives bridge ----------------------------------------------------
+
+
+def bridged_sources():
+    """Derivatives datasets whose frame has to be aligned to the T1w.
+
+    sMRIPrep and FreeSurfer are frequently run on a different acquisition than
+    the one contactseg localises against -- a non-contrast T1w for the same
+    patient, say. Everything they produce then sits in that image's scanner RAS
+    frame, offset from the pre_t1w by however much the patient moved between
+    the two scans. Each dataset in use gets its own bridge, because a run that
+    takes transforms from sMRIPrep and surfaces from FreeSurfer is reading two
+    frames, not one.
+    """
+    if config["derivatives_reg"] != "rigid":
+        return []
+
+    sources = []
+    if config["atlas_source"] in ("smriprep", "freesurfer"):
+        sources.append(config["atlas_source"])
+    if needs_surfaces() and "freesurfer" not in sources:
+        sources.append("freesurfer")
+
+    return sources
+
+
+def find_derivatives_anat(source, subject):
+    """Path to the anatomical ``source`` was computed on, for ``subject``."""
+    relpath = config["derivatives_anat"][source].format(subject=subject)
+
+    if source == "freesurfer":
+        return atlas_lib.get_freesurfer_file(
+            config,
+            subject,
+            relpath,
+            session=config["derivatives_session"],
+        )
+
+    return atlas_lib.find_subject_file(
+        atlas_lib.get_derivatives_dir(config, "smriprep_dir"),
+        subject,
+        relpath,
+        session=config["derivatives_session"],
+    )
+
+
+def get_derivatives_anat(wildcards):
+    """Input function keyed on the ``deriv`` wildcard."""
+    return find_derivatives_anat(wildcards.deriv, wildcards.subject)
+
+
+def derivatives_anat_for(source):
+    """Return an input function for a fixed derivatives dataset."""
+
+    def _get_anat(wildcards):
+        return find_derivatives_anat(source, wildcards.subject)
+
+    return _get_anat
+
+
+def get_bridge_xfm(source=None, extension=".txt"):
+    """4x4 RAS matrix taking a derivatives anatomical to the T1w.
+
+    Returns an empty list when ``source`` needs no bridge, so the rules that
+    consume it can declare it as an optional input. ``source`` defaults to the
+    dataset the transforms come from; pass ``"freesurfer"`` for the rules that
+    read surfaces or segmentations from the subject directory.
+    """
+    source = source or config["atlas_source"]
+    if source not in bridged_sources():
+        return []
+
+    return bids(
+        root=config["output_dir"],
+        datatype="atlasreg",
+        session="pre",
+        mode="image",
+        suffix="xfm",
+        extension=extension,
+        **{"from": source, "to": "T1w"},
+        **inputs["pre_t1w"].wildcards,
+    )
+
+
+def get_bridge_xfm_pattern(extension=".txt"):
+    """The same path with the derivatives dataset left as a wildcard."""
+    return bids(
+        root=config["output_dir"],
+        datatype="atlasreg",
+        session="pre",
+        mode="image",
+        suffix="xfm",
+        extension=extension,
+        **{"from": "{deriv}", "to": "T1w"},
+        **inputs["pre_t1w"].wildcards,
+    )
+
+
+def get_atlas_reference():
+    """Reference grid the template atlas is resampled onto.
+
+    With a bridge in play the ANTs chain only reaches the derivatives
+    anatomical, so that image is the reference and the bridge is folded into
+    the output affine afterwards.
+    """
+    if config["atlas_source"] in bridged_sources():
+        return derivatives_anat_for(config["atlas_source"])
+
+    return rules.n4biascorr.output.corrected_t1w
+
+
 # ---- coordinates -----------------------------------------------------------
 
 

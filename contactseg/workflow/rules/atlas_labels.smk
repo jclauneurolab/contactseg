@@ -4,6 +4,7 @@ if needs_template_reg():
         input:
             coords=get_native_coords(),
             transforms=get_transforms("template_to_T1w"),
+            xfm_ras=get_bridge_xfm(),
         output:
             warped_coords=get_template_coords(),
         group:
@@ -52,6 +53,11 @@ if config["atlas_source"] != "freesurfer":
         input:
             coords=get_native_coords(),
             probseg=get_tissue_probseg(),
+            xfm_ras=(
+                get_bridge_xfm()
+                if config["atlas_source"] == "smriprep"
+                else []
+            ),
         output:
             tissue=bids(
                 root=config["output_dir"],

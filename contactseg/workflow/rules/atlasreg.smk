@@ -40,13 +40,46 @@ if needs_template_reg() and config["atlas_source"] != "smriprep":
             "../scripts/template_registration.py"
 
 
+if bridged_sources():
+
+    rule reg_derivatives_to_t1w:
+        input:
+            derivatives_anat=get_derivatives_anat,
+            t1w=rules.n4biascorr.output.corrected_t1w,
+        output:
+            xfm_ras=get_bridge_xfm_pattern(),
+            xfm_slicer=get_bridge_xfm_pattern(extension=".mat"),
+            out_im=bids(
+                root=config["output_dir"],
+                datatype="atlasreg",
+                session="pre",
+                space="T1w",
+                desc="{deriv}",
+                suffix="T1w",
+                extension=".nii.gz",
+                **inputs["pre_t1w"].wildcards,
+            ),
+        wildcard_constraints:
+            deriv="|".join(bridged_sources()),
+        group:
+            "subj"
+        conda:
+            "../envs/image_processing.yaml"
+        threads: 4
+        resources:
+            mem_mb=16000,
+        script:
+            "../scripts/rigid_registration.py"
+
+
 if get_atlases_by_kind("template", "volume"):
 
     rule warp_atlas_to_native:
         input:
             atlas_dseg=get_template_atlas_dseg,
-            t1w=rules.n4biascorr.output.corrected_t1w,
+            t1w=get_atlas_reference(),
             transforms=get_transforms("template_to_T1w"),
+            xfm_ras=get_bridge_xfm(),
         output:
             atlas_dseg=get_atlas_dseg_in_native(),
         wildcard_constraints:
@@ -66,6 +99,7 @@ if get_atlases_by_kind("native", "volume"):
     rule import_fs_atlas:
         input:
             atlas_dseg=get_fs_atlas_dseg,
+            xfm_ras=get_bridge_xfm("freesurfer"),
         output:
             atlas_dseg=get_atlas_dseg_in_native(),
         wildcard_constraints:

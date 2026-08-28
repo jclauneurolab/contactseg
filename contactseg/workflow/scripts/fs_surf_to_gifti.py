@@ -18,7 +18,7 @@ def get_tkr_to_scanner(ref_vol):
     return header.get_vox2ras() @ np.linalg.inv(header.get_vox2ras_tkr())
 
 
-def fs_surf_to_gifti(surf, ref_vol, output_gii, structure, apply_cras):
+def fs_surf_to_gifti(surf, ref_vol, output_gii, structure, apply_cras, xfm_ras=None):
     """
     Function that writes a freesurfer surface as a GIFTI surface file.
 
@@ -35,6 +35,10 @@ def fs_surf_to_gifti(surf, ref_vol, output_gii, structure, apply_cras):
     apply_cras : bool
         Whether to shift the coordinates into scanner RAS. Spheres are left in
         their own frame.
+    xfm_ras : str, optional
+        Path to a 4x4 RAS matrix taking the freesurfer anatomical to the
+        contactseg T1w, applied after the c_ras shift. Surfaces are point sets,
+        so this is exact.
 
     Returns
     -------
@@ -46,6 +50,8 @@ def fs_surf_to_gifti(surf, ref_vol, output_gii, structure, apply_cras):
 
     if apply_cras:
         xfm = get_tkr_to_scanner(ref_vol)
+        if xfm_ras:
+            xfm = np.loadtxt(xfm_ras) @ xfm
         vertices = nib.affines.apply_affine(xfm, vertices).astype(np.float32)
 
     meta = nib.gifti.GiftiMetaData()
@@ -71,6 +77,14 @@ def fs_surf_to_gifti(surf, ref_vol, output_gii, structure, apply_cras):
     nib.save(gii, output_gii)
 
 
+def first_or_none(value):
+    """Return a single path from an input that may be an empty list."""
+    if isinstance(value, (list, tuple)):
+        return value[0] if value else None
+
+    return value or None
+
+
 if __name__ == "__main__":
     fs_surf_to_gifti(
         surf=snakemake.input.surf,
@@ -78,4 +92,5 @@ if __name__ == "__main__":
         output_gii=snakemake.output.surf_gii,
         structure=snakemake.params.structure,
         apply_cras=snakemake.params.apply_cras,
+        xfm_ras=first_or_none(snakemake.input.xfm_ras),
     )

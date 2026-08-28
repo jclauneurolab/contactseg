@@ -41,6 +41,7 @@ rule fs_surf_to_gifti:
     input:
         surf=get_fs_surface_file,
         ref_vol=get_fs_reference_vol,
+        xfm_ras=get_bridge_xfm("freesurfer"),
     output:
         surf_gii=get_surf_gii("{surfname}"),
     wildcard_constraints:

@@ -444,3 +444,150 @@ def test_contacts_are_pushed_into_template_space(registered_pair):
 
     assert np.allclose(warped[0], [0, 0, 0], atol=1.0)
     assert np.allclose(warped[1], [5, 4, -3], atol=1.0)
+
+
+# ---- derivatives bridge ----------------------------------------------------
+
+
+def rigid_ras(angle_deg=20.0, translation=(3.0, 6.0, -2.0)):
+    """A 4x4 RAS rigid transform, standing in for the measured bridge."""
+    theta = np.deg2rad(angle_deg)
+    matrix = np.eye(4)
+    matrix[:3, :3] = [
+        [np.cos(theta), -np.sin(theta), 0],
+        [np.sin(theta), np.cos(theta), 0],
+        [0, 0, 1],
+    ]
+    matrix[:3, 3] = translation
+
+    return matrix
+
+
+@pytest.fixture
+def bridge(tmp_path):
+    """A bridge matrix on disk, in the 4x4 RAS convention used by main."""
+    matrix = rigid_ras()
+    path = tmp_path / "from-freesurfer_to-T1w_xfm.txt"
+    np.savetxt(path, matrix)
+
+    return path, matrix
+
+
+def test_bridge_moves_the_segmentation_without_touching_its_labels(
+    tmp_path, atlas_volume, bridge
+):
+    """A rigid composes exactly with the affine, so no voxel is resampled."""
+    from import_fs_atlas import import_fs_atlas
+
+    xfm_path, matrix = bridge
+    out = tmp_path / "bridged.nii.gz"
+    import_fs_atlas(str(atlas_volume), str(out), xfm_ras=str(xfm_path))
+
+    source, bridged = nib.load(str(atlas_volume)), nib.load(str(out))
+    assert np.array_equal(np.asarray(source.dataobj), np.asarray(bridged.dataobj))
+    assert np.allclose(bridged.affine, matrix @ source.affine)
+
+
+def test_labels_survive_a_derivatives_frame_offset(
+    tmp_path, atlas_volume, lut, coords, bridge
+):
+    """The point of the bridge: same labels whether or not the frames differ.
+
+    The segmentation is put into a deliberately offset frame, as it would be if
+    freesurfer had run on a different acquisition, and the bridge is applied.
+    Every contact has to come back with the label it had when the frames
+    already agreed.
+    """
+    from import_fs_atlas import import_fs_atlas
+    from lookup_atlas_labels import lookup_atlas_labels
+
+    aligned = lookup_atlas_labels(
+        coords, atlas_volume, lut, tmp_path / "aligned.tsv", 1.0, 1.0, 3.0, 10.0
+    )
+
+    # push the segmentation into the derivatives frame
+    xfm_path, matrix = bridge
+    source = nib.load(str(atlas_volume))
+    offset = tmp_path / "offset_dseg.nii.gz"
+    nib.save(
+        nib.Nifti1Image(
+            np.asarray(source.dataobj), np.linalg.inv(matrix) @ source.affine
+        ),
+        str(offset),
+    )
+
+    bridged = tmp_path / "bridged_dseg.nii.gz"
+    import_fs_atlas(str(offset), str(bridged), xfm_ras=str(xfm_path))
+    recovered = lookup_atlas_labels(
+        coords, bridged, lut, tmp_path / "bridged.tsv", 1.0, 1.0, 3.0, 10.0
+    )
+
+    assert list(recovered["structure"]) == list(aligned["structure"])
+
+    # and without the bridge the labels are wrong, which is the failure mode
+    unbridged = lookup_atlas_labels(
+        coords, offset, lut, tmp_path / "unbridged.tsv", 1.0, 1.0, 3.0, 10.0
+    )
+    assert list(unbridged["structure"]) != list(aligned["structure"])
+
+
+def test_bridge_is_applied_to_surfaces_after_the_cras_shift(
+    tmp_path, fs_surface, bridge
+):
+    from fs_surf_to_gifti import fs_surf_to_gifti
+
+    surf, orig, vertices = fs_surface
+    xfm_path, matrix = bridge
+    out = tmp_path / "lh.white.surf.gii"
+    fs_surf_to_gifti(
+        str(surf),
+        str(orig),
+        str(out),
+        "CORTEX_LEFT",
+        True,
+        xfm_ras=str(xfm_path),
+    )
+
+    header = nib.load(str(orig)).header
+    cras = header.get_vox2ras() @ np.linalg.inv(header.get_vox2ras_tkr())
+    expected = nib.affines.apply_affine(matrix @ cras, vertices)
+
+    assert np.allclose(
+        nib.load(str(out)).agg_data("NIFTI_INTENT_POINTSET"),
+        expected,
+        atol=1e-4,
+    )
+
+
+def test_tissue_maps_are_sampled_in_the_derivatives_frame(tmp_path, coords, bridge):
+    """Contacts are pulled back through the bridge before sampling."""
+    from lookup_tissue_labels import lookup_tissue_labels
+
+    xfm_path, matrix = bridge
+    affine = np.eye(4)
+    affine[:3, 3] = [-30, -30, -30]
+
+    # a ramp along x, so a mis-sampled contact reads a different value
+    ramp = np.tile(np.linspace(0, 1, 60, dtype=np.float32)[:, None, None], (1, 60, 60))
+    probseg = []
+    for name in ["GM", "WM", "CSF"]:
+        path = tmp_path / f"label-{name}_probseg.nii.gz"
+        nib.save(nib.Nifti1Image(ramp, affine), str(path))
+        probseg.append(path)
+
+    bridged = lookup_tissue_labels(
+        coords,
+        probseg,
+        ["GM", "WM", "CSF"],
+        tmp_path / "bridged.tsv",
+        xfm_ras=str(xfm_path),
+    )
+    plain = lookup_tissue_labels(
+        coords, probseg, ["GM", "WM", "CSF"], tmp_path / "plain.tsv"
+    )
+
+    # the contact is pulled back by the inverse bridge before sampling
+    contact = np.array([-12.0, 0.0, 0.0])
+    expected_x = nib.affines.apply_affine(np.linalg.inv(matrix), contact)[0]
+    assert bridged["p_GM"].iloc[0] == pytest.approx((expected_x + 30) / 59, abs=0.02)
+    assert bridged["p_GM"].iloc[0] != pytest.approx(plain["p_GM"].iloc[0])

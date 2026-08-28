@@ -55,9 +55,64 @@ contactseg bids_dir out_dir participant --label --atlas_labels \
 Labels come from the subject's own FreeSurfer (or FastSurfer) run, so no
 template registration happens at all and no template coordinates are reported.
 `aparc+aseg.mgz` is read on its own grid — the conformed volume shares its
-scanner RAS frame with the T1w, so the labels are never resampled and never
-interpolated. Tissue classes are derived from the label indices themselves
+scanner RAS frame with the image FreeSurfer was run on, so the labels are never
+resampled and never interpolated (see the next section when that image is not
+the one contactseg localises against). Tissue classes are derived from the label indices themselves
 rather than from probability maps.
+
+## When the derivatives were run on a different image
+
+sMRIPrep and FreeSurfer are often run on a different acquisition than the one
+contactseg localises contacts against — a non-contrast T1w for the same
+patient, while `pre_t1w` points at the contrast-enhanced run. Everything those
+pipelines produce (transforms, segmentations, surfaces) then lives in *that*
+image's scanner RAS frame, offset from `pre_t1w` by however much the patient
+moved between the two scans. Reading them as if the frames agreed puts every
+contact off by that offset, silently.
+
+The image each dataset was computed on is named in the config:
+
+```yaml
+derivatives_anat:
+  smriprep: "anat/sub-{subject}_desc-preproc_T1w.nii.gz"
+  freesurfer: "mri/orig.mgz"
+```
+
+`--derivatives_reg rigid` (the default) registers that image to the contactseg
+T1w once per dataset and writes a 4x4 RAS matrix, in exactly the convention the
+workflow already uses for the CT-to-T1w matrix:
+
+```
+sub-<label>/ses-pre/atlasreg/
+  sub-<label>_..._from-<smriprep|freesurfer>_to-T1w_mode-image_xfm.txt
+  sub-<label>_..._space-T1w_desc-<smriprep|freesurfer>_T1w.nii.gz   (QC)
+```
+
+Every consumer then applies it the cheapest exact way there is:
+
+| Consumer | How the bridge is applied |
+| --- | --- |
+| FreeSurfer segmentations | composed into the image affine — no voxel is resampled |
+| FreeSurfer surfaces | applied to the vertices, after the c_ras shift |
+| Contacts going to template | applied in RAS before the ANTs chain, as `transform_coords` does |
+| Template atlas coming back | ANTs resamples onto the derivatives grid, then the affine is composed |
+| sMRIPrep tissue maps | its inverse is applied to the contacts before sampling |
+
+Nothing is interpolated twice, and the nonlinear ANTs chain stays the
+two-transform form that the tests cover.
+
+A run that takes transforms from sMRIPrep and surfaces from FreeSurfer is
+reading two frames, so it gets two bridges — one per dataset.
+
+Set `--derivatives_reg identity` to skip it, which is correct only when the
+derivatives were computed on the very same image as `pre_t1w`. If you are not
+sure, leave it on: registering an image to itself costs about a minute and
+returns an identity, whereas guessing wrong is the failure the concordance
+check exists to catch.
+
+Point `pre_t1w` at whichever acquisition you want the contacts localised in by
+editing `pybids_inputs.pre_t1w` in the config — the current filter pins
+`run: "02"`.
 
 ## Atlases
 

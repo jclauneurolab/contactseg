@@ -166,6 +166,18 @@ parse_args:
       (default: %(default)s)
     default: 1.0
     type: float
+  --derivatives_reg:
+    help: >
+      How the anatomical the derivatives were computed on is aligned to the
+      contactseg reference T1w. rigid measures the offset with a rigid
+      registration, which is what you want whenever sMRIPrep or FreeSurfer was
+      run on a different acquisition (a non-contrast T1w, say). identity skips
+      it, and is only correct when the derivatives were computed on the very
+      same image (default: %(default)s)
+    choices:
+      - rigid
+      - identity
+    default: rigid
   --export_nrrd:
     help: >
       Also export every atlas segmentation as a 3D Slicer .seg.nrrd
@@ -192,6 +204,14 @@ atlas_dir: "resources/atlases"
 
 # session label used when looking inside the sMRIPrep / FreeSurfer derivatives
 derivatives_session: pre
+
+# the anatomical each derivatives dataset was computed on, which defines the
+# frame its transforms, segmentations and surfaces live in. With
+# --derivatives_reg rigid this image is registered to the contactseg T1w and
+# the resulting 4x4 RAS matrix bridges the two.
+derivatives_anat:
+  smriprep: "anat/sub-{subject}_desc-preproc_T1w.nii.gz"
+  freesurfer: "mri/orig.mgz"
 
 # reference image for each volumetric template, relative to atlas_dir
 templates:

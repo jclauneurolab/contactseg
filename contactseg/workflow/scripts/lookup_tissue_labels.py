@@ -37,7 +37,7 @@ def sample_volume(img, coords):
     return values
 
 
-def lookup_tissue_labels(coords_fcsv, probseg, tissue_labels, output_tsv):
+def lookup_tissue_labels(coords_fcsv, probseg, tissue_labels, output_tsv, xfm_ras=None):
     """
     Function that reports tissue probabilities at each contact.
 
@@ -52,6 +52,10 @@ def lookup_tissue_labels(coords_fcsv, probseg, tissue_labels, output_tsv):
         Tissue class names, e.g. ``["GM", "WM", "CSF"]``.
     output_tsv : str
         Path to save one row per contact.
+    xfm_ras : str, optional
+        Path to a 4x4 RAS matrix taking the derivatives anatomical to the
+        contactseg T1w. Its inverse is applied to the contacts, so that they
+        are sampled in the frame the probability maps live in.
 
     Returns
     -------
@@ -60,6 +64,9 @@ def lookup_tissue_labels(coords_fcsv, probseg, tissue_labels, output_tsv):
 
     contacts = pd.read_csv(coords_fcsv, skiprows=FCSV_HEADER_ROWS, header=None)
     coords = contacts[[1, 2, 3]].to_numpy(float)
+
+    if xfm_ras:
+        coords = nib.affines.apply_affine(np.linalg.inv(np.loadtxt(xfm_ras)), coords)
 
     tissue = pd.DataFrame({"name": contacts[11].astype(str)})
     for label, probseg_file in zip(tissue_labels, probseg):
@@ -78,10 +85,19 @@ def lookup_tissue_labels(coords_fcsv, probseg, tissue_labels, output_tsv):
     return tissue
 
 
+def first_or_none(value):
+    """Return a single path from an input that may be an empty list."""
+    if isinstance(value, (list, tuple)):
+        return value[0] if value else None
+
+    return value or None
+
+
 if __name__ == "__main__":
     lookup_tissue_labels(
         coords_fcsv=snakemake.input.coords,
         probseg=snakemake.input.probseg,
         tissue_labels=snakemake.params.tissue_labels,
         output_tsv=snakemake.output.tissue,
+        xfm_ras=first_or_none(snakemake.input.xfm_ras),
     )
