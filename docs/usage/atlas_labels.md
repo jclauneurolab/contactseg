@@ -148,11 +148,20 @@ that turns it into a segmentation in subject space:
 | Atlas | Space | Type | Route into subject space |
 | --- | --- | --- | --- |
 | `CerebrA` | template | volume | warped with the transforms from `--atlas_source` |
-| `Yale` | fsaverage | surface | resampled to the subject sphere, then painted into the volume |
+| `Yale` | fsaverage | surface | annotation converted, resampled to the subject sphere, then painted into the volume |
 | `DKTatlas` | native | surface | annotation converted to GIFTI, then painted into the volume |
 | `aparcaseg` | native | volume | read where it is |
 
-Adding an atlas means adding an entry to that block, not writing a rule.
+Adding an atlas means adding an entry to that block, not writing a rule. A
+surface atlas may ship as a freesurfer `.annot` or as a `.label.gii`; an
+annotation is converted once and shared across subjects. The Yale Brain Atlas
+is the worked example — two fsaverage annotations dropped into
+`contactseg/resources/atlases/`, with no lookup table to fetch, since the
+parcel names travel inside the annotation. See the README there.
+
+Resampling an fsaverage atlas needs fsaverage's registration sphere, taken
+from `<freesurfer_dir>/fsaverage/` or `$FREESURFER_HOME/subjects/fsaverage/`
+rather than being redistributed.
 
 ## Volume and surface representations
 

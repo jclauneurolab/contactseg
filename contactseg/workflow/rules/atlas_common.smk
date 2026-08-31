@@ -372,6 +372,67 @@ def get_template_atlas_dseg(wildcards):
     )
 
 
+def get_fsaverage_label_gii():
+    """Atlas labels on the fsaverage surface, as a gifti.
+
+    Published surface atlases are usually distributed as freesurfer
+    annotations, which are converted once and shared across subjects.
+    """
+    return bids(
+        root=config["output_dir"],
+        datatype="atlasreg",
+        space="fsaverage",
+        hemi="{hemi}",
+        atlas="{atlas}",
+        suffix="dseg",
+        extension=".label.gii",
+    )
+
+
+def get_fsaverage_sphere_gii():
+    """The fsaverage registration sphere, as a gifti."""
+    return bids(
+        root=config["output_dir"],
+        datatype="atlasreg",
+        space="fsaverage",
+        hemi="{hemi}",
+        suffix="sphere.surf.gii",
+    )
+
+
+def atlas_ships_annot(atlas):
+    """True when the packaged atlas labels are a freesurfer annotation."""
+    entry = atlas_lib.get_atlas_entry(config, atlas)
+
+    return str(entry.get("label", "")).endswith(".annot")
+
+
+def get_atlas_label_source():
+    """Input function for the labels ``resample_atlas_to_subject`` resamples.
+
+    An atlas shipped as a gifti is read where it is; one shipped as an
+    annotation goes through the conversion rule first.
+    """
+
+    def _get_labels(wildcards):
+        if atlas_ships_annot(wildcards.atlas):
+            return expand(
+                get_fsaverage_label_gii(),
+                atlas=wildcards.atlas,
+                hemi=wildcards.hemi,
+            )
+
+        return atlas_lib.get_atlas_file(
+            workflow.basedir,
+            config,
+            wildcards.atlas,
+            "label",
+            hemi=wildcards.hemi,
+        )
+
+    return _get_labels
+
+
 # ---- freesurfer surfaces ---------------------------------------------------
 
 

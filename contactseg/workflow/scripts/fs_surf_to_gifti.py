@@ -26,8 +26,10 @@ def fs_surf_to_gifti(surf, ref_vol, output_gii, structure, apply_cras, xfm_ras=N
     ----------
     surf : str
         Path to the freesurfer surface (e.g. ``lh.white``).
-    ref_vol : str
-        Path to the conformed volume carrying the c_ras offset.
+    ref_vol : str or None
+        Path to the conformed volume carrying the c_ras offset. Only needed
+        when ``apply_cras`` is set; a sphere has no anatomical frame to be
+        shifted into.
     output_gii : str
         Path to save the GIFTI surface.
     structure : str
@@ -88,7 +90,7 @@ def first_or_none(value):
 if __name__ == "__main__":
     fs_surf_to_gifti(
         surf=snakemake.input.surf,
-        ref_vol=snakemake.input.ref_vol,
+        ref_vol=first_or_none(snakemake.input.get("ref_vol")),
         output_gii=snakemake.output.surf_gii,
         structure=snakemake.params.structure,
         apply_cras=snakemake.params.apply_cras,

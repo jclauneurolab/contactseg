@@ -19,21 +19,17 @@ def get_fs_reference_vol(wildcards):
     )
 
 
-def get_fsaverage_label(wildcards):
-    """Packaged atlas labels, on the fsaverage surface."""
+def get_packaged_annot(wildcards):
+    """Packaged atlas annotation, on the fsaverage surface."""
     return atlas_lib.get_atlas_file(
         workflow.basedir, config, wildcards.atlas, "label", hemi=wildcards.hemi
     )
 
 
 def get_fsaverage_sphere(wildcards):
-    """Packaged fsaverage sphere the atlas labels are defined on."""
-    return atlas_lib.get_atlas_file(
-        workflow.basedir,
-        config,
-        wildcards.atlas,
-        "sphere",
-        hemi=wildcards.hemi,
+    """The fsaverage registration sphere, from the freesurfer installation."""
+    return atlas_lib.find_fsaverage_file(
+        config, config["fsaverage_files"]["sphere"], hemi=wildcards.hemi
     )
 
 
@@ -105,10 +101,49 @@ if get_atlases_by_kind("native", "surface"):
 
 if get_atlases_by_kind("fsaverage", "surface"):
 
+    rule fsaverage_sphere_to_gifti:
+        input:
+            surf=get_fsaverage_sphere,
+        output:
+            surf_gii=get_fsaverage_sphere_gii(),
+        group:
+            "subj"
+        conda:
+            "../envs/analysis.yaml"
+        params:
+            structure=lambda wildcards: config["structure_types"][
+                wildcards.hemi
+            ],
+            apply_cras=False,
+        script:
+            "../scripts/fs_surf_to_gifti.py"
+
+    rule atlas_annot_to_label_gii:
+        input:
+            annot=get_packaged_annot,
+        output:
+            label_gii=get_fsaverage_label_gii(),
+        wildcard_constraints:
+            atlas="|".join(
+                atlas
+                for atlas in get_atlases_by_kind("fsaverage", "surface")
+                if atlas_ships_annot(atlas)
+            ),
+        group:
+            "subj"
+        conda:
+            "../envs/analysis.yaml"
+        params:
+            structure=lambda wildcards: config["structure_types"][
+                wildcards.hemi
+            ],
+        script:
+            "../scripts/annot_to_label_gii.py"
+
     rule resample_atlas_to_subject:
         input:
-            label_gii=get_fsaverage_label,
-            atlas_sphere=get_fsaverage_sphere,
+            label_gii=get_atlas_label_source(),
+            atlas_sphere=get_fsaverage_sphere_gii(),
             subject_sphere=expand(
                 get_surf_gii("{surfname}"),
                 surfname="sphere",

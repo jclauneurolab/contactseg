@@ -116,3 +116,38 @@ def test_a_missing_derivatives_anat_entry_says_what_to_add(config):
 
     with pytest.raises(ValueError, match="smriprep"):
         atlas.get_derivatives_anat_spec(config, "smriprep")
+
+
+def test_atlas_filenames_can_use_upper_case_hemispheres(config):
+    """Published atlases often name hemispheres LH/RH rather than lh/rh."""
+    config["atlases"]["Yale"] = {
+        "space": "fsaverage",
+        "type": "surface",
+        "label": "YBA_696_{hemi_up}_fsaverage.annot",
+        "lut": "n/a",
+    }
+
+    resolved = atlas.get_atlas_file(
+        "/opt/contactseg/workflow", config, "Yale", "label", hemi="R"
+    )
+
+    assert resolved.endswith("YBA_696_RH_fsaverage.annot")
+
+
+def test_fsaverage_is_found_beside_the_subjects(config, tmp_path):
+    surf = tmp_path / "fsaverage" / "surf"
+    surf.mkdir(parents=True)
+    (surf / "lh.sphere.reg").touch()
+    config["freesurfer_dir"] = str(tmp_path)
+
+    resolved = atlas.find_fsaverage_file(config, "surf/{hemi_fs}.sphere.reg", hemi="L")
+
+    assert resolved == str(surf / "lh.sphere.reg")
+
+
+def test_fsaverage_without_freesurfer_says_what_to_set(config, monkeypatch):
+    monkeypatch.delenv("FREESURFER_HOME", raising=False)
+    config["freesurfer_dir"] = False
+
+    with pytest.raises(ValueError, match="freesurfer_dir"):
+        atlas.find_fsaverage_file(config, "surf/{hemi_fs}.sphere.reg", hemi="L")

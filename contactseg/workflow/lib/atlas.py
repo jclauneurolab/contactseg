@@ -4,6 +4,7 @@ These are kept out of the ``.smk`` files so they can be unit tested and reused
 by the workflow scripts.
 """
 
+import os
 from pathlib import Path
 
 # freesurfer names hemispheres lh/rh, BIDS (and workbench) use L/R
@@ -186,10 +187,50 @@ def get_freesurfer_file(config, subject, relpath, session=None, hemi=None):
     return str(subject_dir / _fill_hemi(relpath, hemi))
 
 
+def find_fsaverage_file(config, relpath, hemi=None):
+    """Locate a file inside the fsaverage subject directory.
+
+    fsaverage ships with freesurfer, so it is looked for beside the subjects
+    first and under ``$FREESURFER_HOME`` second, rather than being
+    redistributed here. When neither exists the last candidate is returned, so
+    snakemake reports the file it wanted.
+    """
+
+    relpath = _fill_hemi(relpath, hemi)
+
+    roots = []
+    if config.get("freesurfer_dir"):
+        roots.append(Path(config["freesurfer_dir"]) / "fsaverage")
+    freesurfer_home = os.environ.get("FREESURFER_HOME")
+    if freesurfer_home:
+        roots.append(Path(freesurfer_home) / "subjects" / "fsaverage")
+
+    if not roots:
+        raise ValueError(
+            "fsaverage is needed for a surface atlas defined on it: set "
+            "--freesurfer_dir, or FREESURFER_HOME in the environment"
+        )
+
+    for root in roots:
+        if (root / relpath).exists():
+            return str(root / relpath)
+
+    return str(roots[-1] / relpath)
+
+
 def _fill_hemi(pattern, hemi):
-    """Fill ``{hemi}``/``{hemi_fs}`` placeholders in a file pattern."""
+    """Fill hemisphere placeholders in a file pattern.
+
+    ``{hemi}`` is the BIDS form (L/R), ``{hemi_fs}`` freesurfer's (lh/rh) and
+    ``{hemi_up}`` the upper-case form (LH/RH) that several published atlases
+    use in their filenames.
+    """
 
     if hemi is None:
         return pattern
 
-    return pattern.format(hemi=hemi, hemi_fs=HEMI_TO_FS[hemi])
+    return pattern.format(
+        hemi=hemi,
+        hemi_fs=HEMI_TO_FS[hemi],
+        hemi_up=HEMI_TO_FS[hemi].upper(),
+    )

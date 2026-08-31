@@ -245,17 +245,19 @@ atlases:
     type: volume
     dseg: "tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii.gz"
     lut: "tpl-MNI152NLin2009cSym_atlas-CerebrA_dseg.tsv"
+  # Yale Brain Atlas, 696 parcels, distributed as fsaverage annotations at
+  # github.com/YaleBrainAtlas/YaleBrainAtlas (data/YBA_696parcels). Drop both
+  # hemispheres into resources/atlases; the parcel names travel inside the
+  # annotation, so no lookup table is needed.
   Yale:
     space: fsaverage
     type: surface
-    label: "tpl-fsaverage_hemi-{hemi}_atlas-Yale_dseg.label.gii"
-    sphere: "tpl-fsaverage_hemi-{hemi}_sphere.surf.gii"
-    lut: "tpl-fsaverage_atlas-Yale_dseg.tsv"
-    # value added to each hemisphere's keys before the two are merged into one
-    # volume, so that parcels numbered per hemisphere stay distinguishable
+    label: "YBA_696_{hemi_up}_fsaverage.annot"
+    # both hemispheres number their parcels from the same range, so the right
+    # is shifted clear of the left before they are merged into one volume
     key_offset:
       L: 0
-      R: 0
+      R: 1000
   DKTatlas:
     space: native
     type: surface
@@ -280,6 +282,12 @@ surface_files:
 # volume whose header carries the c_ras offset between freesurfer tkrRAS and
 # the scanner RAS the contacts live in
 surface_reference: "mri/orig.mgz"
+
+# files taken from the fsaverage subject that ships with freesurfer, looked for
+# in <freesurfer_dir>/fsaverage first and $FREESURFER_HOME/subjects/fsaverage
+# second. Used to resample an atlas defined on fsaverage onto a subject.
+fsaverage_files:
+  sphere: "surf/{hemi_fs}.sphere.reg"
 
 # neighbourhood searched around each contact, in units of the combined sigma
 n_sigma: 3.0

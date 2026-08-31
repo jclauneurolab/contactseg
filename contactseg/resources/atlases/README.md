@@ -38,24 +38,47 @@ than as the raw `.nii` the atlas ships as.
 
 ## Surface atlases
 
-`--atlas Yale` expects the Yale Brain Atlas as per-hemisphere GIFTI label files
-on the fsaverage surface, together with the fsaverage sphere they are defined
-on:
+### Yale Brain Atlas
 
+`--atlas Yale` reads the 696-parcel atlas as the two fsaverage annotations the
+project distributes. Put both here:
+
+```bash
+cd contactseg/resources/atlases
+base=https://raw.githubusercontent.com/YaleBrainAtlas/YaleBrainAtlas/master/data/YBA_696parcels
+curl -LO $base/YBA_696_LH_fsaverage.annot
+curl -LO $base/YBA_696_RH_fsaverage.annot
 ```
-tpl-fsaverage_hemi-L_atlas-Yale_dseg.label.gii
-tpl-fsaverage_hemi-R_atlas-Yale_dseg.label.gii
-tpl-fsaverage_hemi-L_sphere.surf.gii
-tpl-fsaverage_hemi-R_sphere.surf.gii
-tpl-fsaverage_atlas-Yale_dseg.tsv
+
+Roughly 1.3 MB each. The parcel names and colours travel inside the
+annotation, so there is no lookup table to fetch: the workflow writes one from
+the annotation when it maps the atlas into the volume.
+
+If the right-hemisphere file is named differently in the repository, correct
+the pattern in the `atlases` block rather than renaming the download:
+
+```yaml
+  Yale:
+    label: "YBA_696_{hemi_up}_fsaverage.annot"
 ```
 
-These are not redistributed here. If the two hemispheres number their parcels
-from the same range, set `key_offset` for the atlas in the config so that the
-merged volume keeps them apart — the offsets are added to the label values
-before the hemispheres are combined, and the lookup table has to agree with the
-result.
+`{hemi_up}` expands to LH/RH, `{hemi_fs}` to lh/rh and `{hemi}` to L/R.
 
-Any other surface atlas can be added the same way: give it an entry under
-`atlases` with `space: fsaverage`, `type: surface`, and its own `label`,
-`sphere` and `lut` files.
+The two hemispheres number their parcels from the same range, so the config
+shifts the right by `key_offset: {L: 0, R: 1000}` before the hemispheres are
+merged into one volume. If the atlas is ever redistributed with hemisphere-
+unique numbering, set both offsets to zero.
+
+### fsaverage
+
+Resampling an fsaverage atlas onto a subject needs fsaverage's own
+registration sphere. It is not redistributed here either — it ships with
+freesurfer, and is looked for in `<freesurfer_dir>/fsaverage/` first and
+`$FREESURFER_HOME/subjects/fsaverage/` second. If neither has it, copy the
+fsaverage subject into your freesurfer derivatives directory.
+
+### Adding another surface atlas
+
+Give it an entry under `atlases` with `space: fsaverage`, `type: surface` and
+its own `label` file. Both `.annot` and `.label.gii` are accepted; an
+annotation is converted once and shared across subjects.
