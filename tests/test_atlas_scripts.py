@@ -708,3 +708,94 @@ def test_a_sphere_ignores_the_bridge_even_when_given_one(tmp_path, fs_surface, b
     )
 
     assert np.allclose(nib.load(str(out)).agg_data("NIFTI_INTENT_POINTSET"), vertices)
+
+
+# ---- snakemake glue --------------------------------------------------------
+
+
+class FakeIO(dict):
+    """Stands in for snakemake's Namedlist: attribute and .get() access."""
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError as err:
+            raise AttributeError(name) from err
+
+
+def run_script(name, **sections):
+    """Execute a workflow script's __main__ block with a fake snakemake.
+
+    A dry run never executes a script, so the block that unpacks the snakemake
+    object is the one part of a rule that no DAG test can reach. Scripts shared
+    by two rules with different inputs are where that bites: reading an input
+    the other rule does not declare fails only at runtime.
+    """
+    import runpy
+    from types import SimpleNamespace
+
+    fake = SimpleNamespace(**{key: FakeIO(value) for key, value in sections.items()})
+    runpy.run_path(
+        str(SCRIPTS / f"{name}.py"),
+        init_globals={"snakemake": fake},
+        run_name="__main__",
+    )
+
+
+def test_subject_surface_glue_runs(tmp_path, fs_surface, bridge):
+    surf, orig, _ = fs_surface
+    xfm_path, _ = bridge
+    out = tmp_path / "sub.surf.gii"
+
+    run_script(
+        "fs_surf_to_gifti",
+        input={
+            "surf": str(surf),
+            "ref_vol": str(orig),
+            "xfm_ras": str(xfm_path),
+        },
+        output={"surf_gii": str(out)},
+        params={"structure": "CORTEX_LEFT", "apply_cras": True},
+    )
+
+    assert out.exists()
+
+
+def test_fsaverage_surface_glue_runs_without_ref_vol_or_bridge(tmp_path, fs_surface):
+    """The fsaverage rule declares neither, and must not fail on their absence."""
+    surf, _, vertices = fs_surface
+    out = tmp_path / "fsaverage.surf.gii"
+
+    run_script(
+        "fs_surf_to_gifti",
+        input={"surf": str(surf)},
+        output={"surf_gii": str(out)},
+        params={"structure": "CORTEX_LEFT", "apply_cras": False},
+    )
+
+    assert np.allclose(nib.load(str(out)).agg_data("NIFTI_INTENT_POINTSET"), vertices)
+
+
+def test_annot_glue_runs(tmp_path):
+    from annot_to_label_gii import annot_to_label_gii  # noqa: F401
+
+    labels = np.array([0, 1, 1, 2], dtype=np.int32)
+    ctab = np.array(
+        [[25, 5, 25, 0, 0], [100, 20, 30, 0, 0], [10, 200, 40, 0, 0]],
+        dtype=np.int32,
+    )
+    ctab[:, 4] = ctab[:, 0] + ctab[:, 1] * 2**8 + ctab[:, 2] * 2**16
+    annot = tmp_path / "lh.annot"
+    nib.freesurfer.write_annot(
+        str(annot), labels, ctab, ["unknown", "a", "b"], fill_ctab=False
+    )
+
+    out = tmp_path / "lh.label.gii"
+    run_script(
+        "annot_to_label_gii",
+        input={"annot": str(annot)},
+        output={"label_gii": str(out)},
+        params={"structure": "CORTEX_LEFT"},
+    )
+
+    assert out.exists()

@@ -40,7 +40,8 @@ def fs_surf_to_gifti(surf, ref_vol, output_gii, structure, apply_cras, xfm_ras=N
     xfm_ras : str, optional
         Path to a 4x4 RAS matrix taking the freesurfer anatomical to the
         contactseg T1w, applied after the c_ras shift. Surfaces are point sets,
-        so this is exact.
+        so this is exact. Absent for fsaverage surfaces, which are a resampling
+        reference rather than subject anatomy.
 
     Returns
     -------
@@ -94,5 +95,5 @@ if __name__ == "__main__":
         output_gii=snakemake.output.surf_gii,
         structure=snakemake.params.structure,
         apply_cras=snakemake.params.apply_cras,
-        xfm_ras=first_or_none(snakemake.input.xfm_ras),
+        xfm_ras=first_or_none(snakemake.input.get("xfm_ras")),
     )
