@@ -799,3 +799,27 @@ def test_annot_glue_runs(tmp_path):
     )
 
     assert out.exists()
+
+
+def test_results_survive_a_diagnostic_that_cannot_run(tmp_path, capsys):
+    """The concordance line is a diagnostic; losing it must not lose labels."""
+    import pandas as pd_
+
+    from lookup_atlas_labels import report_concordance
+
+    # a frame missing the column the summary wants
+    report_concordance(pd_.DataFrame({"structure": ["a", "Unknown"]}), "x.nii")
+    printed = capsys.readouterr().out
+
+    assert "labelled 1/2" in printed
+    assert "hemi_match missing" in printed
+
+
+def test_labels_are_written_before_the_summary(tmp_path, atlas_volume, lut, coords):
+    from lookup_atlas_labels import lookup_atlas_labels
+
+    out = tmp_path / "labels.tsv"
+    lookup_atlas_labels(coords, atlas_volume, lut, out, 1.0, 1.0, 3.0, 10.0)
+
+    assert out.exists()
+    assert len(pd.read_csv(out, sep="\t")) == 4

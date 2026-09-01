@@ -455,8 +455,13 @@ def lookup_atlas_labels(
         )
 
     labels = pd.DataFrame(rows)
-    report_concordance(labels, atlas_dseg)
+
+    # write the results first: a diagnostic must not be able to lose them
     labels.to_csv(output_tsv, sep="\t", index=False, float_format="%.3f")
+    try:
+        report_concordance(labels, atlas_dseg)
+    except Exception as err:  # pragma: no cover - never worth failing over
+        print(f"[concordance] could not summarise {atlas_dseg}: {err}")
 
     return labels
 
@@ -466,19 +471,45 @@ def report_concordance(labels, atlas_dseg):
 
     A registration that silently failed, or a segmentation in the wrong frame,
     shows up here as a collapse in either number.
+
+    This is a diagnostic, so it reports what it can and never raises: labelling
+    that has already succeeded must not be thrown away because the summary of
+    it could not be printed.
     """
     total = len(labels)
     if not total:
+        print(f"[concordance] {atlas_dseg}: no contacts to label")
         return
 
-    labelled = int((labels["structure"] != "Unknown").sum())
-    hemi_matched = int(labels["hemi_match"].sum())
-    print(
-        f"[concordance] {atlas_dseg}: labelled {labelled}/{total} "
-        f"({labelled / total:.0%}), hemisphere match {hemi_matched}/{total} "
-        f"({hemi_matched / total:.0%})"
-    )
-    if labelled / total < 0.80 or hemi_matched / total < 0.80:
+    parts = []
+    for column, description in (
+        ("structure", "labelled"),
+        ("hemi_match", "hemisphere match"),
+    ):
+        if column not in labels.columns:
+            parts.append(f"{description} unavailable ({column} missing)")
+            continue
+        if column == "structure":
+            count = int((labels[column] != "Unknown").sum())
+        else:
+            count = int(labels[column].sum())
+        parts.append(f"{description} {count}/{total} ({count / total:.0%})")
+
+    print(f"[concordance] {atlas_dseg}: " + ", ".join(parts))
+
+    low = [
+        column
+        for column in ("structure", "hemi_match")
+        if column in labels.columns
+        and (
+            (labels[column] != "Unknown").sum()
+            if column == "structure"
+            else labels[column].sum()
+        )
+        / total
+        < 0.80
+    ]
+    if low:
         print(
             "  !! low concordance -- check that the segmentation and the "
             "contacts share a coordinate frame"
