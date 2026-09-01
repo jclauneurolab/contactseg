@@ -683,3 +683,28 @@ def test_colours_fall_back_to_a_stable_palette(tmp_path):
     # and the same index always gets the same colour
     gen_colortable(str(lut), "CerebrA", str(ctbl), str(tmp_path / "c.txt"))
     assert [line.split() for line in ctbl.read_text().splitlines()[3:] if line] == rows
+
+
+def test_a_sphere_ignores_the_bridge_even_when_given_one(tmp_path, fs_surface, bridge):
+    """A sphere is a registration space, not an anatomical one.
+
+    The rule hands every surface the bridge transform, so the guard that keeps
+    it off the spheres is the only thing preventing a subject sphere from being
+    rotated out of correspondence with fsaverage -- which would misresample
+    every parcel without any obvious symptom.
+    """
+    from fs_surf_to_gifti import fs_surf_to_gifti
+
+    surf, orig, vertices = fs_surface
+    xfm_path, _ = bridge
+    out = tmp_path / "lh.sphere.surf.gii"
+    fs_surf_to_gifti(
+        str(surf),
+        str(orig),
+        str(out),
+        "CORTEX_LEFT",
+        apply_cras=False,
+        xfm_ras=str(xfm_path),
+    )
+
+    assert np.allclose(nib.load(str(out)).agg_data("NIFTI_INTENT_POINTSET"), vertices)
