@@ -100,7 +100,18 @@ def rigid_registration(moving_image, fixed_image, xfm_ras, xfm_slicer, out_im):
         fixed=fixed,
         moving=moving,
         type_of_transform="Rigid",
+        # spelled out rather than left to ANTsPy's defaults: this transform's
+        # error propagates into every contact label, so it should not move
+        # because a dependency changed. The schedule mirrors the one the
+        # CT-to-T1w registration uses, which spends real iterations at full
+        # resolution -- ANTsPy's default schedule allows only ten there.
+        grad_step=0.1,
         aff_metric="mattes",
+        aff_sampling=32,
+        aff_random_sampling_rate=0.25,
+        aff_iterations=(1000, 500, 250, 100),
+        aff_shrink_factors=(8, 4, 2, 1),
+        aff_smoothing_sigmas=(3, 2, 1, 0),
     )
 
     transform = ants.read_transform(registration_result["fwdtransforms"][0])
