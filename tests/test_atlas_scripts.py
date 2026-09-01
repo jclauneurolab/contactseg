@@ -631,3 +631,55 @@ def test_surface_atlas_names_come_from_the_gifti_not_a_hard_coded_list(
     assert list(table.loc[table["label"] < 2000, "hemi"].unique()) == ["L"]
     # background is not a region
     assert 1000 not in set(table["label"])
+
+
+def test_colour_tables_are_written_for_both_viewers(tmp_path):
+    """Slicer and ITK-SNAP take the same information, punctuated differently."""
+    from gen_colortable import gen_colortable
+
+    lut = tmp_path / "lut.tsv"
+    pd.DataFrame(
+        {
+            "label": [1, 1002],
+            "name": ["G temp sup", "S calcarine"],
+            "hemi": ["L", "R"],
+            "r": [220, 10],
+            "g": [20, 200],
+            "b": [30, 40],
+        }
+    ).to_csv(lut, sep="\t", index=False)
+
+    ctbl = tmp_path / "colors.ctbl"
+    itksnap = tmp_path / "colors.txt"
+    gen_colortable(str(lut), "Yale", str(ctbl), str(itksnap))
+
+    slicer = ctbl.read_text().splitlines()
+    assert slicer[0].startswith("# Color table file Yale")
+    assert slicer[2] == "0 background 0 0 0 0"
+    # index, name, then the atlas's own colour
+    assert slicer[3] == "1 L_G_temp_sup 220 20 30 255"
+    assert slicer[4].startswith("1002 R_S_calcarine 10 200 40")
+
+    snap = itksnap.read_text()
+    assert snap.startswith("# ITK-SnAP Label Description File")
+    assert '"L_G_temp_sup"' in snap
+    assert "1002" in snap
+
+
+def test_colours_fall_back_to_a_stable_palette(tmp_path):
+    """An atlas whose table carries no colours still gets distinct ones."""
+    from gen_colortable import gen_colortable
+
+    lut = tmp_path / "lut.tsv"
+    pd.DataFrame({"label": [1, 2], "name": ["a", "b"]}).to_csv(
+        lut, sep="\t", index=False
+    )
+
+    ctbl = tmp_path / "colors.ctbl"
+    gen_colortable(str(lut), "CerebrA", str(ctbl), str(tmp_path / "c.txt"))
+    rows = [line.split() for line in ctbl.read_text().splitlines()[3:] if line]
+
+    assert rows[0][2:5] != rows[1][2:5]
+    # and the same index always gets the same colour
+    gen_colortable(str(lut), "CerebrA", str(ctbl), str(tmp_path / "c.txt"))
+    assert [line.split() for line in ctbl.read_text().splitlines()[3:] if line] == rows

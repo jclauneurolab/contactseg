@@ -165,6 +165,12 @@ rather than being redistributed.
 
 ## Volume and surface representations
 
+An fsaverage atlas is resampled onto the subject with
+`wb_command -label-resample ... ADAP_BARY_AREA -area-surfs`, which weights each
+parcel by the cortical area it covers. Plain `BARYCENTRIC` ignores that, which
+matters for a fine parcellation: small parcels can otherwise be lost where
+fsaverage and the subject differ in surface area.
+
 Surface atlases are carried into the volume with
 `wb_command -label-to-volume-mapping`, ribbon-constrained between the white and
 pial surfaces, one hemisphere at a time. `key_offset` shifts each hemisphere's
@@ -225,6 +231,21 @@ Per-contact columns in the merged table, prefixed by atlas name:
 `p_second`, `margin`, `entropy`, `confidence`, `p_GM`, `p_WM`, `p_CSF`,
 `n_structures`, `dist_to_boundary_mm`, `nearest_structure`,
 `nearest_dist_mm`, `hemi_match`.
+
+Every atlas that carries a lookup table also gets viewer colour tables, so a
+plain labelmap opens as anatomy rather than as numbers:
+
+```
+sub-<label>_..._space-T1w_atlas-<atlas>_desc-colors_dseg.ctbl   3D Slicer
+sub-<label>_..._space-T1w_atlas-<atlas>_desc-colors_dseg.txt    ITK-SNAP
+```
+
+In Slicer, load the `.ctbl` in the Colors module, then set it as the colour
+node of the loaded `dseg.nii.gz`. Colours come from the atlas itself where it
+has them — a GIFTI label table, or r/g/b columns in the lookup table — and are
+otherwise generated from the label index, so the same atlas always looks the
+same. `aparcaseg` is the exception: it uses freesurfer's indices, and both
+Slicer and freesurfer already ship `FreeSurferColorLUT.txt` for it.
 
 `--export_nrrd` additionally writes each segmentation as a 3D Slicer
 `.seg.nrrd`, with one named, coloured segment per label, so the atlas loads

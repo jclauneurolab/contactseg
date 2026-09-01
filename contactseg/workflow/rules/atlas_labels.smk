@@ -125,6 +125,24 @@ rule gen_atlas_electrodes:
         "../scripts/gen_atlas_electrodes.py"
 
 
+if get_colortable_atlases():
+
+    rule gen_colortable:
+        input:
+            lut=get_atlas_lut,
+        output:
+            colortable=get_colortable(),
+            itksnap=get_colortable(extension=".txt"),
+        wildcard_constraints:
+            atlas="|".join(get_colortable_atlases()),
+        group:
+            "subj"
+        conda:
+            "../envs/analysis.yaml"
+        script:
+            "../scripts/gen_colortable.py"
+
+
 if config["export_nrrd"]:
 
     rule atlas_dseg_to_nrrd:

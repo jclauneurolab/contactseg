@@ -26,10 +26,12 @@ def get_packaged_annot(wildcards):
     )
 
 
-def get_fsaverage_sphere(wildcards):
-    """The fsaverage registration sphere, from the freesurfer installation."""
+def get_fsaverage_surf(wildcards):
+    """An fsaverage surface, from the freesurfer installation."""
     return atlas_lib.find_fsaverage_file(
-        config, config["fsaverage_files"]["sphere"], hemi=wildcards.hemi
+        config,
+        config["fsaverage_files"][wildcards.surfname],
+        hemi=wildcards.hemi,
     )
 
 
@@ -101,11 +103,13 @@ if get_atlases_by_kind("native", "surface"):
 
 if get_atlases_by_kind("fsaverage", "surface"):
 
-    rule fsaverage_sphere_to_gifti:
+    rule fsaverage_surf_to_gifti:
         input:
-            surf=get_fsaverage_sphere,
+            surf=get_fsaverage_surf,
         output:
-            surf_gii=get_fsaverage_sphere_gii(),
+            surf_gii=get_fsaverage_surf_gii(),
+        wildcard_constraints:
+            surfname="|".join(config["fsaverage_files"].keys()),
         group:
             "subj"
         conda:
@@ -114,6 +118,9 @@ if get_atlases_by_kind("fsaverage", "surface"):
             structure=lambda wildcards: config["structure_types"][
                 wildcards.hemi
             ],
+            # fsaverage surfaces are only ever used as a resampling reference,
+            # never overlaid on a subject volume, so they stay in their own
+            # frame
             apply_cras=False,
         script:
             "../scripts/fs_surf_to_gifti.py"
@@ -143,10 +150,24 @@ if get_atlases_by_kind("fsaverage", "surface"):
     rule resample_atlas_to_subject:
         input:
             label_gii=get_atlas_label_source(),
-            atlas_sphere=get_fsaverage_sphere_gii(),
+            atlas_sphere=expand(
+                get_fsaverage_surf_gii(),
+                surfname="sphere",
+                allow_missing=True,
+            ),
+            atlas_area=expand(
+                get_fsaverage_surf_gii(),
+                surfname="pial",
+                allow_missing=True,
+            ),
             subject_sphere=expand(
                 get_surf_gii("{surfname}"),
                 surfname="sphere",
+                allow_missing=True,
+            ),
+            subject_area=expand(
+                get_surf_gii("{surfname}"),
+                surfname="pial",
                 allow_missing=True,
             ),
         output:
@@ -162,8 +183,14 @@ if get_atlases_by_kind("fsaverage", "surface"):
                 wildcards.hemi
             ],
         shell:
+            # ADAP_BARY_AREA with -area-surfs weights each parcel by the
+            # cortical area it actually covers, so small parcels are not lost
+            # where fsaverage and the subject differ in surface area. Plain
+            # BARYCENTRIC ignores that, which matters for a parcellation this
+            # fine.
             "wb_command -label-resample {input.label_gii} {input.atlas_sphere}"
-            " {input.subject_sphere} BARYCENTRIC {output.label_gii} && "
+            " {input.subject_sphere} ADAP_BARY_AREA {output.label_gii}"
+            " -area-surfs {input.atlas_area} {input.subject_area} && "
             "wb_command -set-structure {output.label_gii} {params.structure}"
 
 

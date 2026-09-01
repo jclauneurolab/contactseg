@@ -389,15 +389,45 @@ def get_fsaverage_label_gii():
     )
 
 
-def get_fsaverage_sphere_gii():
-    """The fsaverage registration sphere, as a gifti."""
+def get_fsaverage_surf_gii(surfname="{surfname}"):
+    """An fsaverage surface, as a gifti."""
     return bids(
         root=config["output_dir"],
         datatype="atlasreg",
         space="fsaverage",
         hemi="{hemi}",
-        suffix="sphere.surf.gii",
+        suffix=f"{surfname}.surf.gii",
     )
+
+
+def get_colortable(extension=".ctbl"):
+    """Viewer colour table written beside an atlas segmentation."""
+    return bids(
+        root=config["output_dir"],
+        datatype="atlasreg",
+        session="pre",
+        space="T1w",
+        atlas="{atlas}",
+        desc="colors",
+        suffix="dseg",
+        extension=extension,
+        **inputs["pre_t1w"].wildcards,
+    )
+
+
+def get_colortable_atlases():
+    """Atlases whose labels come with a lookup table we can colour from.
+
+    aparc+aseg is excluded: it uses freesurfer's own indices, and both Slicer
+    and freesurfer already ship FreeSurferColorLUT.txt for it.
+    """
+    return [
+        atlas
+        for atlas in config["atlas"]
+        if atlas in get_surface_atlases()
+        or atlas_lib.get_atlas_entry(config, atlas)["lut"]
+        != "FreeSurferColorLUT"
+    ]
 
 
 def atlas_ships_annot(atlas):
@@ -549,6 +579,14 @@ def get_atlas_labels_output():
                 hemi=config["hemi"],
             )
         )
+    if get_colortable_atlases():
+        for extension in (".ctbl", ".txt"):
+            final.extend(
+                inputs["pre_t1w"].expand(
+                    get_colortable(extension=extension),
+                    atlas=get_colortable_atlases(),
+                )
+            )
     if config["export_nrrd"]:
         final.extend(
             inputs["pre_t1w"].expand(

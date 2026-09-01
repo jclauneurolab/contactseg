@@ -67,10 +67,11 @@ def merge_hemispheres(hemi_niis, key_offsets, output_nii):
 def write_lookup_table(label_gii, key_offsets, hemis, output_tsv):
     """Write the lookup table for the merged volume, from the label tables.
 
-    The parcel names travel with the GIFTI, so they are read from it rather
-    than assumed from a hard-coded list. A surface atlas whose parcels are not
-    freesurfer's Desikan-Killiany set -- Destrieux, the Yale atlas, anything
-    custom -- then names its regions correctly without further configuration.
+    The parcel names and colours travel with the GIFTI, so they are read from
+    it rather than assumed from a hard-coded list. A surface atlas whose
+    parcels are not freesurfer's Desikan-Killiany set -- Destrieux, the Yale
+    atlas, anything custom -- then names and colours its regions correctly
+    without further configuration, including in the viewer colour tables.
     """
     rows = []
     for label_file, offset, hemi in zip(label_gii, key_offsets, hemis):
@@ -83,6 +84,9 @@ def write_lookup_table(label_gii, key_offsets, hemis, output_tsv):
                     "label": int(entry.key) + offset,
                     "name": str(entry.label),
                     "hemi": hemi,
+                    "r": int(round((entry.red or 0) * 255)),
+                    "g": int(round((entry.green or 0) * 255)),
+                    "b": int(round((entry.blue or 0) * 255)),
                 }
             )
 

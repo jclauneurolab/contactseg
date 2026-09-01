@@ -288,6 +288,7 @@ surface_reference: "mri/orig.mgz"
 # second. Used to resample an atlas defined on fsaverage onto a subject.
 fsaverage_files:
   sphere: "surf/{hemi_fs}.sphere.reg"
+  pial: "surf/{hemi_fs}.pial"
 
 # neighbourhood searched around each contact, in units of the combined sigma
 n_sigma: 3.0
