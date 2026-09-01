@@ -111,7 +111,6 @@ def test_labels_follow_the_hemisphere_of_the_contact(
 
     assert labels.loc["LA1", "structure"] == "Block (Left)"
     assert labels.loc["RB1", "structure"] == "Block (Right)"
-    assert labels.loc[["LA1", "RB1"], "hemi_match"].all()
 
 
 def test_a_contact_outside_every_label_is_unknown(tmp_path, atlas_volume, lut, coords):
@@ -135,7 +134,7 @@ def test_a_contact_on_a_boundary_reports_lower_confidence(
         coords, atlas_volume, lut, tmp_path / "labels.tsv", 1.0, 1.0, 3.0, 10.0
     ).set_index("name")
 
-    assert labels.loc["LA2", "p_top"] < labels.loc["LA1", "p_top"]
+    assert labels.loc["LA2", "probability"] < labels.loc["LA1", "probability"]
     assert labels.loc["LA2", "entropy"] > labels.loc["LA1", "entropy"]
     assert (
         labels.loc["LA2", "dist_to_boundary_mm"]
@@ -154,7 +153,7 @@ def test_a_wider_sigma_widens_the_distribution(tmp_path, atlas_volume, lut, coor
         coords, atlas_volume, lut, tmp_path / "b.tsv", 1.0, 4.0, 3.0, 10.0
     ).set_index("name")
 
-    assert loose.loc["LA2", "p_top"] < tight.loc["LA2", "p_top"]
+    assert loose.loc["LA2", "probability"] < tight.loc["LA2", "probability"]
 
 
 def test_freesurfer_indices_resolve_without_a_lookup_table(tmp_path, coords):
@@ -801,18 +800,39 @@ def test_annot_glue_runs(tmp_path):
     assert out.exists()
 
 
-def test_results_survive_a_diagnostic_that_cannot_run(tmp_path, capsys):
+def test_summary_reports_what_it_can_when_a_column_is_absent(capsys):
     """The concordance line is a diagnostic; losing it must not lose labels."""
-    import pandas as pd_
-
     from lookup_atlas_labels import report_concordance
 
-    # a frame missing the column the summary wants
-    report_concordance(pd_.DataFrame({"structure": ["a", "Unknown"]}), "x.nii")
+    report_concordance(pd.DataFrame({"structure": ["a", "Unknown"]}), "x.nii")
     printed = capsys.readouterr().out
 
     assert "labelled 1/2" in printed
-    assert "hemi_match missing" in printed
+    # no name column, so the hemisphere half is simply not reported
+    assert "hemisphere match" not in printed
+
+
+def test_hemisphere_agreement_is_reported_without_a_column(capsys):
+    """The frame check survives the column being dropped from the table."""
+    from lookup_atlas_labels import report_concordance
+
+    labels = pd.DataFrame(
+        {
+            "name": ["LA1", "LA2", "RB1", "RB2"],
+            "structure": [
+                "ctx-lh-insula",
+                "ctx-rh-insula",  # left contact, right structure
+                "ctx-rh-insula",
+                "ctx-rh-insula",
+            ],
+        }
+    )
+    report_concordance(labels, "x.nii")
+    printed = capsys.readouterr().out
+
+    assert "hemisphere match 3/4 (75%)" in printed
+    assert "low concordance" in printed
+    assert "hemi_match" not in list(labels.columns)
 
 
 def test_labels_are_written_before_the_summary(tmp_path, atlas_volume, lut, coords):

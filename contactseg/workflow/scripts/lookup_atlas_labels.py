@@ -431,12 +431,11 @@ def lookup_atlas_labels(
                 "structure": hard_name,
                 "tissue": tissue_class(hard, freesurfer_lut),
                 "top_structure": lut.get(top_index, f"idx{top_index}"),
-                "p_top": p_top,
-                "second_structure": lut.get(second_index, f"idx{second_index}"),
-                "p_second": p_second,
-                "margin": p_top - p_second,
+                "probability": p_top,
                 "entropy": norm_entropy(probs),
                 "confidence": confidence(p_top, p_top - p_second),
+                "second_structure": lut.get(second_index, f"idx{second_index}"),
+                "p_second": p_second,
                 "p_GM": tissue.get("GM", 0.0) if freesurfer_lut else np.nan,
                 "p_WM": tissue.get("WM", 0.0) if freesurfer_lut else np.nan,
                 "p_CSF": tissue.get("CSF", 0.0) if freesurfer_lut else np.nan,
@@ -450,7 +449,6 @@ def lookup_atlas_labels(
                     lut.get(near_index, f"idx{near_index}") if near_index else "None"
                 ),
                 "nearest_dist_mm": near_dist,
-                "hemi_match": hemi_of(hard_name) == str(names.iloc[i])[:1].upper(),
             }
         )
 
@@ -470,7 +468,10 @@ def report_concordance(labels, atlas_dseg):
     """Print how many contacts got a label, and whether hemispheres agree.
 
     A registration that silently failed, or a segmentation in the wrong frame,
-    shows up here as a collapse in either number.
+    shows up here as a collapse in either number. The hemisphere agreement is
+    computed here rather than carried as a column: it is a check on the run,
+    not a property of a contact, and it keeps the output table to the columns
+    that describe the labelling itself.
 
     This is a diagnostic, so it reports what it can and never raises: labelling
     that has already succeeded must not be thrown away because the summary of
@@ -482,34 +483,26 @@ def report_concordance(labels, atlas_dseg):
         return
 
     parts = []
-    for column, description in (
-        ("structure", "labelled"),
-        ("hemi_match", "hemisphere match"),
-    ):
-        if column not in labels.columns:
-            parts.append(f"{description} unavailable ({column} missing)")
-            continue
-        if column == "structure":
-            count = int((labels[column] != "Unknown").sum())
-        else:
-            count = int(labels[column].sum())
-        parts.append(f"{description} {count}/{total} ({count / total:.0%})")
+    fractions = []
+
+    if "structure" in labels.columns:
+        labelled = int((labels["structure"] != "Unknown").sum())
+        parts.append(f"labelled {labelled}/{total} ({labelled / total:.0%})")
+        fractions.append(labelled / total)
+
+    if {"structure", "name"} <= set(labels.columns):
+        # the L/R prefix of a contact name should agree with the hemisphere of
+        # the structure it landed in
+        matched = sum(
+            hemi_of(str(structure)) == str(name)[:1].upper()
+            for structure, name in zip(labels["structure"], labels["name"])
+        )
+        parts.append(f"hemisphere match {matched}/{total} ({matched / total:.0%})")
+        fractions.append(matched / total)
 
     print(f"[concordance] {atlas_dseg}: " + ", ".join(parts))
 
-    low = [
-        column
-        for column in ("structure", "hemi_match")
-        if column in labels.columns
-        and (
-            (labels[column] != "Unknown").sum()
-            if column == "structure"
-            else labels[column].sum()
-        )
-        / total
-        < 0.80
-    ]
-    if low:
+    if any(fraction < 0.80 for fraction in fractions):
         print(
             "  !! low concordance -- check that the segmentation and the "
             "contacts share a coordinate frame"

@@ -227,10 +227,15 @@ sub-<label>/ses-pre/surf/
 ```
 
 Per-contact columns in the merged table, prefixed by atlas name:
-`structure`, `tissue`, `top_structure`, `p_top`, `second_structure`,
-`p_second`, `margin`, `entropy`, `confidence`, `p_GM`, `p_WM`, `p_CSF`,
+`structure`, `tissue`, `top_structure`, `probability`, `entropy`,
+`confidence`, `second_structure`, `p_second`, `p_GM`, `p_WM`, `p_CSF`,
 `n_structures`, `dist_to_boundary_mm`, `nearest_structure`,
-`nearest_dist_mm`, `hemi_match`.
+`nearest_dist_mm`.
+
+Hemisphere agreement — whether the L/R prefix of a contact name matches the
+hemisphere of the structure it landed in — is reported in the concordance line
+rather than carried as a column. It is a check on the run, not a property of a
+contact.
 
 Every atlas that carries a lookup table also gets viewer colour tables, so a
 plain labelmap opens as anatomy rather than as numbers:
