@@ -11,7 +11,7 @@ rule n4biascorr:
         ),
     output:
         corrected_t1w=bids(
-            root=config["output_dir"],
+            root=deriv_root,
             suffix="T1w",
             desc="n4",
             datatype="anat",
@@ -37,7 +37,7 @@ rule get_registration_matrix:
             **inputs["post_ct"].wildcards,
         ),
         fixed_t1w=bids(
-            root=config["output_dir"],
+            root=deriv_root,
             suffix="T1w",
             desc="n4",
             datatype="anat",
@@ -47,25 +47,28 @@ rule get_registration_matrix:
         ),
     output:
         xfm_slicer=bids(
-            root=config["output_dir"],
-            datatype="registration",
+            root=deriv_root,
+            datatype="anat",
             desc="from_ct-to_T1w",
-            suffix="slicer.mat",
+            suffix="xfm",
+            extension=".mat",
             **inputs["post_ct"].wildcards,
         ),
         xfm_ras=bids(
-            root=config["output_dir"],
-            datatype="registration",
+            root=deriv_root,
+            datatype="anat",
             desc="from_ct-to_T1w",
-            suffix="xfm.txt",
+            suffix="xfm",
+            extension=".txt",
             **inputs["post_ct"].wildcards,
         ),
         out_im=bids(
-            root=config["output_dir"],
+            root=deriv_root,
             datatype="anat",
             session="post",
             space="T1w",
-            suffix="ct.nii.gz",
+            suffix="ct",
+            extension=".nii.gz",
             **inputs["post_ct"].wildcards,
         ),
     params:
@@ -74,6 +77,52 @@ rule get_registration_matrix:
         "../envs/image_processing.yaml"
     script:
         "../scripts/registration.py"
+
+
+if not config.get("SMRIPREP_DIR"):
+
+    rule get_t1w_to_mni_matrix:
+        input:
+            t1_img=bids(
+                root=deriv_root,
+                suffix="T1w",
+                desc="n4",
+                datatype="anat",
+                session="pre",
+                extension=".nii.gz",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            mni_template=str(
+                Path(workflow.basedir).parent.parent
+                / "resources/atlases/tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz"
+            ),
+        output:
+            xfm_slicer=bids(
+                root=deriv_root,
+                datatype="anat",
+                desc="from_T1w-to-TEMPLATE",
+                suffix="xfm",
+                extension=".mat",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            xfm_ras=bids(
+                root=deriv_root,
+                datatype="anat",
+                desc="from_T1w-to-TEMPLATE",
+                suffix="xfm",
+                extension=".txt",
+                **inputs["pre_t1w"].wildcards,
+            ),
+            out_im=bids(
+                root=deriv_root,
+                datatype="anat",
+                space="TEMPLATE",
+                suffix="T1w",
+                extension=".nii.gz",
+                **inputs["pre_t1w"].wildcards,
+            ),
+        script:
+            "../scripts/affine.py"
 
 
 if config["manual_reg_matrix"]:
@@ -90,7 +139,7 @@ if config["manual_reg_matrix"]:
                 **inputs["post_ct"].wildcards,
             ),
             ref_im=bids(
-                root=config["output_dir"],
+                root=deriv_root,
                 suffix="T1w",
                 desc="n4",
                 datatype="anat",
@@ -101,12 +150,13 @@ if config["manual_reg_matrix"]:
             transform_matrix=get_reg_matrix(),
         output:
             out_im=bids(
-                root=config["output_dir"],
+                root=deriv_root,
                 datatype="anat",
                 session="post",
                 desc="user_registration",
                 space="T1w",
-                suffix="ct.nii.gz",
+                suffix="ct",
+                extension=".nii.gz",
                 **inputs["post_ct"].wildcards,
             ),
         params:
