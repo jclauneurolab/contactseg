@@ -221,17 +221,23 @@ the workflow thinks it is.
 ```
 sub-<label>/ses-post/ieeg/
   sub-<label>_..._space-T1w_desc-atlas_electrodes.tsv   merged table
-  sub-<label>_..._space-T1w_desc-atlas_electrodes.fcsv  labelled contacts for Slicer
-  sub-<label>_..._space-T1w_atlas-<atlas>_desc-atlas_labels.tsv
   sub-<label>_..._space-T1w_desc-tissue_labels.tsv
   sub-<label>_..._space-<template>_desc-contactseg_coords.fcsv
 sub-<label>/ses-pre/atlasreg/
   sub-<label>_..._from-T1w_to-<template>_mode-image_desc-{affine,warp}_xfm.{mat,nii.gz}
   sub-<label>_..._space-T1w_atlas-<atlas>_dseg.nii.gz
+  sub-<label>_..._space-T1w_atlas-<atlas>_desc-atlas_labels.tsv
+  sub-<label>_..._space-T1w_atlas-<atlas>_desc-atlas_labels.xlsx
 sub-<label>/ses-pre/surf/
   sub-<label>_..._hemi-<L|R>_space-T1w_{white,pial,midthickness}.surf.gii
   sub-<label>_..._hemi-<L|R>_space-T1w_atlas-<atlas>_dseg.label.gii
 ```
+
+The per-atlas label tables sit in `ses-pre/atlasreg` beside the segmentation
+they were read out of, next to its lookup and colour tables. Each is written
+twice: a tsv for anything that reads it, and an xlsx — same columns, header
+frozen — for opening in Excel without the import dialog turning contact names
+into dates. The merged table stays in `ses-post/ieeg`, with the contacts.
 
 Per-contact columns in the merged table, prefixed by atlas name:
 `structure`, `tissue`, `top_structure`, `probability`, `entropy`,

@@ -320,6 +320,28 @@ def get_surface_atlas_lut():
     )
 
 
+def get_atlas_labels(extension=".tsv"):
+    """Per-atlas contact labels.
+
+    These live in ``ses-pre/atlasreg`` beside the segmentation they were read
+    out of, rather than with the contacts: the atlas, its lookup table and its
+    colour tables are all there, and the labels are that segmentation sampled
+    at the contact positions. The merged electrodes table stays in
+    ``ses-post/ieeg``, where the contacts themselves are.
+    """
+    return bids(
+        root=config["output_dir"],
+        datatype="atlasreg",
+        session="pre",
+        space="T1w",
+        atlas="{atlas}",
+        desc="atlas",
+        suffix="labels",
+        extension=extension,
+        **inputs["post_ct"].wildcards,
+    )
+
+
 def get_atlas_lut(wildcards):
     """Lookup table for ``wildcards.atlas``.
 
@@ -555,22 +577,24 @@ def get_tissue_probseg():
 
 def get_atlas_labels_output():
     """Final targets added to rule all when --atlas_labels is set."""
-    final = []
-    for extension in (".tsv", ".fcsv"):
-        final.extend(
-            inputs["post_ct"].expand(
-                bids(
-                    root=config["output_dir"],
-                    datatype="ieeg",
-                    session="post",
-                    space="T1w",
-                    desc="atlas",
-                    suffix="electrodes",
-                    extension=extension,
-                    **inputs["post_ct"].wildcards,
-                )
-            )
+    final = inputs["post_ct"].expand(
+        bids(
+            root=config["output_dir"],
+            datatype="ieeg",
+            session="post",
+            space="T1w",
+            desc="atlas",
+            suffix="electrodes",
+            extension=".tsv",
+            **inputs["post_ct"].wildcards,
         )
+    )
+    final.extend(
+        inputs["post_ct"].expand(
+            get_atlas_labels(extension=".xlsx"),
+            atlas=config["atlas"],
+        )
+    )
     if config["map_atlas_surfaces"]:
         final.extend(
             inputs["pre_t1w"].expand(

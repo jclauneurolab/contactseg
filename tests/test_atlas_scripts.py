@@ -218,16 +218,31 @@ def test_merged_table_prefixes_columns_per_atlas(tmp_path, atlas_volume, lut, co
         atlases=["CerebrA"],
         template="MNI152NLin2009cSym",
         output_tsv=tmp_path / "electrodes.tsv",
-        output_fcsv=tmp_path / "electrodes.fcsv",
     )
 
     assert "CerebrA_structure" in merged.columns
     assert "MNI152NLin2009cSym_x" in merged.columns
     assert len(merged) == 4
 
-    # the fcsv carries the structure in the label column, for Slicer
-    written = (tmp_path / "electrodes.fcsv").read_text().splitlines()
-    assert written[3].split(",")[11] == "Block (Left)"
+
+def test_label_tables_are_also_written_as_a_workbook(tmp_path, atlas_volume, lut, coords):
+    """The tsv is the machine-readable copy; the xlsx is the one people open."""
+    pytest.importorskip("openpyxl")
+    from lookup_atlas_labels import lookup_atlas_labels
+    from tsv_to_xlsx import tsv_to_xlsx
+
+    labels = tmp_path / "labels.tsv"
+    lookup_atlas_labels(coords, atlas_volume, lut, labels, 1.0, 1.0, 3.0, 10.0)
+
+    out = tmp_path / "labels.xlsx"
+    tsv_to_xlsx(str(labels), str(out), sheet_name="CerebrA")
+
+    written = pd.read_excel(out, sheet_name="CerebrA")
+    expected = pd.read_csv(labels, sep="\t")
+
+    assert list(written.columns) == list(expected.columns)
+    assert list(written["name"]) == list(expected["name"])
+    assert list(written["structure"]) == list(expected["structure"])
 
 
 # ---- freesurfer surfaces ---------------------------------------------------

@@ -23,17 +23,7 @@ rule lookup_atlas_labels:
         atlas_dseg=get_atlas_dseg_in_native(),
         lut=get_atlas_lut,
     output:
-        labels=bids(
-            root=config["output_dir"],
-            datatype="ieeg",
-            session="post",
-            space="T1w",
-            atlas="{atlas}",
-            desc="atlas",
-            suffix="labels",
-            extension=".tsv",
-            **inputs["post_ct"].wildcards,
-        ),
+        labels=get_atlas_labels(),
     group:
         "subj"
     conda:
@@ -45,6 +35,19 @@ rule lookup_atlas_labels:
         max_search=config["max_search_dist"],
     script:
         "../scripts/lookup_atlas_labels.py"
+
+
+rule atlas_labels_to_xlsx:
+    input:
+        tsv=get_atlas_labels(),
+    output:
+        xlsx=get_atlas_labels(extension=".xlsx"),
+    group:
+        "subj"
+    conda:
+        "../envs/excel.yaml"
+    script:
+        "../scripts/tsv_to_xlsx.py"
 
 
 if config["atlas_source"] != "freesurfer":
@@ -102,16 +105,6 @@ rule gen_atlas_electrodes:
             desc="atlas",
             suffix="electrodes",
             extension=".tsv",
-            **inputs["post_ct"].wildcards,
-        ),
-        electrodes_fcsv=bids(
-            root=config["output_dir"],
-            datatype="ieeg",
-            session="post",
-            space="T1w",
-            desc="atlas",
-            suffix="electrodes",
-            extension=".fcsv",
             **inputs["post_ct"].wildcards,
         ),
     group:
