@@ -105,7 +105,7 @@ def rigid_registration(moving_image, fixed_image, xfm_ras, xfm_slicer, out_im):
         # because a dependency changed. The schedule mirrors the one the
         # CT-to-T1w registration uses, which spends real iterations at full
         # resolution -- ANTsPy's default schedule allows only ten there.
-        grad_step=0.1,
+        grad_step=0.2,
         aff_metric="mattes",
         aff_sampling=32,
         aff_random_sampling_rate=0.25,
