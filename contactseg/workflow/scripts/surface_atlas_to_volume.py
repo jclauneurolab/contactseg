@@ -34,6 +34,25 @@ def label_to_volume(label_gii, midthickness, white, pial, ref_vol, output_nii):
     )
 
 
+def detect_background(data):
+    """Return the label value that means "no parcel here" in ``data``.
+
+    Nothing says an atlas has to call its unlabelled region zero. The Yale
+    Brain Atlas numbers it 650, and ``-label-to-volume-mapping`` writes that
+    key for every voxel outside the ribbon -- which is most of the head. Taking
+    zero on faith then makes the first hemisphere claim the whole volume and
+    the second one disappear.
+
+    The eight corners of a whole-head grid cannot be cortex, so the value that
+    holds most of them is the background. Ties resolve towards the lower value,
+    which keeps the ordinary zero-background case answering zero.
+    """
+    edges = [np.unique([0, size - 1]) for size in data.shape]
+    values, counts = np.unique(data[np.ix_(*edges)], return_counts=True)
+
+    return int(values[np.argmax(counts)])
+
+
 def merge_hemispheres(hemi_niis, key_offsets, output_nii):
     """Combine per-hemisphere label volumes into one segmentation.
 
@@ -46,13 +65,20 @@ def merge_hemispheres(hemi_niis, key_offsets, output_nii):
     Where the two hemispheres claim the same voxel the first one wins, so the
     (rare) overlap along the midline resolves deterministically rather than by
     file order.
+
+    Returns the background value found in each hemisphere, so the lookup table
+    can leave those keys out of the region list.
     """
     merged = None
     affine = None
+    backgrounds = []
     for hemi_nii, offset in zip(hemi_niis, key_offsets):
         img = nib.load(hemi_nii)
         data = np.rint(np.asarray(img.dataobj)).astype(np.int32)
-        data = np.where(data > 0, data + offset, 0)
+        background = detect_background(data)
+        backgrounds.append(background)
+        keep = (data != background) & (data != 0)
+        data = np.where(keep, data + offset, 0)
         if merged is None:
             merged, affine = data, img.affine
         else:
@@ -63,8 +89,10 @@ def merge_hemispheres(hemi_niis, key_offsets, output_nii):
     out.set_sform(affine, code=1)
     nib.save(out, output_nii)
 
+    return backgrounds
 
-def write_lookup_table(label_gii, key_offsets, hemis, output_tsv):
+
+def write_lookup_table(label_gii, key_offsets, hemis, output_tsv, backgrounds=None):
     """Write the lookup table for the merged volume, from the label tables.
 
     The parcel names and colours travel with the GIFTI, so they are read from
@@ -72,12 +100,21 @@ def write_lookup_table(label_gii, key_offsets, hemis, output_tsv):
     parcels are not freesurfer's Desikan-Killiany set -- Destrieux, the Yale
     atlas, anything custom -- then names and colours its regions correctly
     without further configuration, including in the viewer colour tables.
+
+    ``backgrounds`` is the per-hemisphere unlabelled key, as found in the
+    volumes by :func:`detect_background`. Those keys were dropped from the
+    segmentation, so they are not regions and must not be named as ones.
     """
+    if backgrounds is None:
+        backgrounds = [0] * len(label_gii)
+
     rows = []
-    for label_file, offset, hemi in zip(label_gii, key_offsets, hemis):
+    for label_file, offset, hemi, background in zip(
+        label_gii, key_offsets, hemis, backgrounds
+    ):
         table = nib.load(label_file).labeltable
         for entry in table.labels:
-            if int(entry.key) == 0:
+            if int(entry.key) in (0, background):
                 continue
             rows.append(
                 {
@@ -143,9 +180,9 @@ def surface_atlas_to_volume(
             )
             hemi_niis.append(hemi_nii)
 
-        merge_hemispheres(hemi_niis, key_offsets, output_nii)
+        backgrounds = merge_hemispheres(hemi_niis, key_offsets, output_nii)
 
-    write_lookup_table(label_gii, key_offsets, hemis, output_tsv)
+    write_lookup_table(label_gii, key_offsets, hemis, output_tsv, backgrounds)
 
 
 if __name__ == "__main__":

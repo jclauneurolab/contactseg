@@ -178,6 +178,13 @@ label values before the two are merged, so parcellations that number their
 parcels per hemisphere stay distinguishable — with 1000 and 2000 the result
 carries FreeSurfer's own `ctx-lh-*` / `ctx-rh-*` indices.
 
+An atlas does not have to call its unlabelled region zero — the Yale atlas
+calls it 650 — and `-label-to-volume-mapping` writes that key for every voxel
+outside the ribbon. The background is therefore found per hemisphere from the
+corners of the grid, which cannot be cortex, and dropped before the merge.
+Taking zero on faith would let the first hemisphere claim the whole head and
+the second one disappear.
+
 `--map_atlas_surfaces` runs the mapping the other way as well, so volumetric
 atlases get a surface representation via
 `wb_command -volume-to-surface-mapping` and `-metric-label-import`. Both

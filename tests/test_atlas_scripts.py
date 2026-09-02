@@ -330,6 +330,69 @@ def test_hemispheres_are_offset_apart_before_merging(tmp_path):
     assert set(np.unique(merged)) == {0, 1003, 2003}
 
 
+def test_a_nonzero_unlabelled_key_does_not_swallow_the_other_hemisphere(tmp_path):
+    """The Yale atlas calls its unlabelled region 650, not 0.
+
+    ``-label-to-volume-mapping`` writes that key everywhere outside the ribbon,
+    so a merge that treats "not zero" as "is a parcel" lets the first
+    hemisphere claim the whole head and the second one vanish.
+    """
+    from surface_atlas_to_volume import merge_hemispheres
+
+    affine = np.eye(4)
+    hemis = []
+    for i in range(2):
+        data = np.full((10, 10, 10), 650, dtype=np.int32)
+        # a ribbon sits inside the head, never against the edge of the grid
+        data[i * 3 + 2 : i * 3 + 5] = 3
+        path = tmp_path / f"hemi{i}.nii.gz"
+        nib.save(nib.Nifti1Image(data, affine), str(path))
+        hemis.append(str(path))
+
+    out = tmp_path / "merged.nii.gz"
+    backgrounds = merge_hemispheres(hemis, [0, 1000], str(out))
+    merged = np.asarray(nib.load(str(out)).dataobj)
+
+    assert backgrounds == [650, 650]
+    # both hemispheres survive, and the flood is gone
+    assert set(np.unique(merged)) == {0, 3, 1003}
+    assert (merged == 3).sum() == 300
+    assert (merged == 1003).sum() == 300
+
+
+def test_the_unlabelled_key_is_not_named_as_a_region(tmp_path):
+    """A background key that is not zero still has to stay out of the table."""
+    from annot_to_label_gii import annot_to_label_gii
+    from surface_atlas_to_volume import write_lookup_table
+
+    label_files = []
+    for hemi in ("L", "R"):
+        labels = np.array([0, 1, 2, 1], dtype=np.int32)
+        ctab = np.array(
+            [[100, 20, 30, 0, 0], [10, 200, 40, 0, 0], [25, 5, 25, 0, 0]],
+            dtype=np.int32,
+        )
+        ctab[:, 4] = ctab[:, 0] + ctab[:, 1] * 2**8 + ctab[:, 2] * 2**16
+        annot = tmp_path / f"{hemi}.annot"
+        nib.freesurfer.write_annot(
+            str(annot),
+            labels,
+            ctab,
+            ["unknown", "parcelA", "unassigned"],
+            fill_ctab=False,
+        )
+        gii = tmp_path / f"{hemi}.label.gii"
+        annot_to_label_gii(str(annot), str(gii), f"CORTEX_{hemi}")
+        label_files.append(str(gii))
+
+    out = tmp_path / "dseg.tsv"
+    write_lookup_table(label_files, [0, 1000], ["L", "R"], str(out), [2, 2])
+    table = pd.read_csv(out, sep="\t")
+
+    assert set(table["name"]) == {"parcelA"}
+    assert set(table["label"]) == {1, 1001}
+
+
 # ---- exports ---------------------------------------------------------------
 
 
