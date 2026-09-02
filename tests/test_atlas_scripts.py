@@ -983,12 +983,9 @@ def test_an_atlas_that_declares_no_tissue_says_so(tmp_path, coords):
     assert set(inside["tissue"]) == {"n/a"}
 
 
-def test_a_name_that_already_carries_its_hemisphere_is_not_prefixed_again(tmp_path):
-    """Yale parcels are "L_TP1_B"; prefixing them gave "L_L_TP1_B" everywhere."""
-    from atlas_dseg_to_nrrd import read_lut as nrrd_lut
-    from gen_colortable import read_lut as ctbl_lut
-    from lookup_atlas_labels import read_lut as label_lut
-
+@pytest.fixture
+def mixed_hemi_lut(tmp_path):
+    """A table mixing names that carry their side with names that do not."""
     path = tmp_path / "lut.tsv"
     pd.DataFrame(
         [
@@ -999,17 +996,34 @@ def test_a_name_that_already_carries_its_hemisphere_is_not_prefixed_again(tmp_pa
         ]
     ).to_csv(path, sep="\t", index=False)
 
-    names, _, _ = label_lut(str(path))
+    return path
+
+
+def test_a_name_that_already_carries_its_hemisphere_is_not_prefixed_again(
+    mixed_hemi_lut,
+):
+    """Yale parcels are "L_TP1_B"; prefixing them gave "L_L_TP1_B" everywhere."""
+    from gen_colortable import read_lut as ctbl_lut
+    from lookup_atlas_labels import read_lut as label_lut
+
+    names, _, _ = label_lut(str(mixed_hemi_lut))
     assert names[1] == "L_TP1_B"
     assert names[1002] == "R_TP2.2_A"
     assert names[2003] == "superiortemporal (Right)"
 
-    assert {name for _, name, _ in ctbl_lut(str(path))} == {
+    assert {name for _, name, _ in ctbl_lut(str(mixed_hemi_lut))} == {
         "L_TP1_B",
         "R_TP2.2_A",
         "R_superiortemporal",
     }
-    assert {name for name, _ in nrrd_lut(str(path)).values()} == {
+
+
+def test_the_nrrd_export_names_hemispheres_the_same_way(mixed_hemi_lut):
+    """Its own test: pynrrd lives only in the export rule's environment."""
+    pytest.importorskip("nrrd")
+    from atlas_dseg_to_nrrd import read_lut as nrrd_lut
+
+    assert {name for name, _ in nrrd_lut(str(mixed_hemi_lut)).values()} == {
         "L_TP1_B",
         "R_TP2.2_A",
         "R_superiortemporal",
