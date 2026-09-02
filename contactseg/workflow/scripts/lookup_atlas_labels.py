@@ -169,35 +169,52 @@ def read_lut(lut_file):
 
     Names are suffixed with the hemisphere when the table carries one, so that
     a left and a right structure sharing a name stay distinguishable.
+
+    Returns the names, whether the freesurfer indices are in use, and the
+    tissue class of each label where the table declares one. Only freesurfer
+    indices carry their tissue in the number itself; any other atlas has to say
+    so in a ``tissue`` column, and an atlas that says nothing reports no tissue
+    rather than a guess.
     """
     if not lut_file:
-        return build_fs_lut(), True
+        return build_fs_lut(), True, {}
 
     table = pd.read_csv(lut_file, sep="\t")
     table.columns = table.columns.str.lower()
 
     lut = {}
+    tissues = {}
     for _, row in table.iterrows():
         name = str(row["name"])
         if "hemi" in table.columns and str(row["hemi"]) in ("L", "R"):
             side = "Left" if row["hemi"] == "L" else "Right"
             name = f"{name} ({side})"
         lut[int(row["label"])] = name
+        if "tissue" in table.columns and str(row["tissue"]) not in ("", "nan"):
+            tissues[int(row["label"])] = str(row["tissue"])
 
     # background is rarely listed in a dseg.tsv, but every unlabelled contact
     # lands on it
     lut.setdefault(0, "Unknown")
 
-    return lut, False
+    return lut, False, tissues
 
 
-def tissue_class(index, freesurfer_lut):
-    """Map a label index to a coarse tissue class."""
+def tissue_class(index, freesurfer_lut, tissues=None):
+    """Map a label index to a coarse tissue class.
+
+    ``tissues`` is what the lookup table declared, and wins where it has an
+    answer. Without it, only freesurfer indices can be classified: an atlas
+    that neither uses those indices nor declares a tissue column gets "n/a",
+    which says the atlas is silent rather than that the contact is nowhere.
+    """
     index = int(index)
     if index == 0:
         return "Unknown"
+    if tissues and index in tissues:
+        return tissues[index]
     if not freesurfer_lut:
-        return "Unknown"
+        return "n/a"
     if 1000 <= index < 1100 or 2000 <= index < 2100 or index in (3, 42):
         return "GM"
     if index in (8, 47) or index in FS_SUBCORTICAL_GM:
@@ -376,7 +393,10 @@ def lookup_atlas_labels(
     pandas.DataFrame
     """
 
-    lut, freesurfer_lut = read_lut(lut_file)
+    lut, freesurfer_lut, tissues = read_lut(lut_file)
+    # a tissue fraction is only meaningful for a class the atlas can express:
+    # a cortex-only parcellation has no white matter to put probability on
+    classes = {"GM", "WM", "CSF"} if freesurfer_lut else set(tissues.values())
     sigma = float(np.hypot(sigma_contact, sigma_reg))
 
     contacts = pd.read_csv(coords_fcsv, skiprows=FCSV_HEADER_ROWS, header=None)
@@ -417,7 +437,7 @@ def lookup_atlas_labels(
 
         tissue = {}
         for index, prob in probs.items():
-            group = tissue_class(index, freesurfer_lut)
+            group = tissue_class(index, freesurfer_lut, tissues)
             tissue[group] = tissue.get(group, 0.0) + prob
 
         if hard == 0:
@@ -429,16 +449,16 @@ def lookup_atlas_labels(
             {
                 "name": names.iloc[i],
                 "structure": hard_name,
-                "tissue": tissue_class(hard, freesurfer_lut),
+                "tissue": tissue_class(hard, freesurfer_lut, tissues),
                 "top_structure": lut.get(top_index, f"idx{top_index}"),
                 "probability": p_top,
                 "entropy": norm_entropy(probs),
                 "confidence": confidence(p_top, p_top - p_second),
                 "second_structure": lut.get(second_index, f"idx{second_index}"),
                 "p_second": p_second,
-                "p_GM": tissue.get("GM", 0.0) if freesurfer_lut else np.nan,
-                "p_WM": tissue.get("WM", 0.0) if freesurfer_lut else np.nan,
-                "p_CSF": tissue.get("CSF", 0.0) if freesurfer_lut else np.nan,
+                "p_GM": tissue.get("GM", 0.0) if "GM" in classes else np.nan,
+                "p_WM": tissue.get("WM", 0.0) if "WM" in classes else np.nan,
+                "p_CSF": tissue.get("CSF", 0.0) if "CSF" in classes else np.nan,
                 "n_structures": len(probs),
                 "dist_to_boundary_mm": (
                     dist_to_boundary(search_region, vol, xyz, hard)

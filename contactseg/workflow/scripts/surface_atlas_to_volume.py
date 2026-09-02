@@ -121,6 +121,11 @@ def write_lookup_table(label_gii, key_offsets, hemis, output_tsv, backgrounds=No
                     "label": int(entry.key) + offset,
                     "name": str(entry.label),
                     "hemi": hemi,
+                    # every one of these labels was painted between the white
+                    # and pial surfaces, so it is cortical grey matter by
+                    # construction. Saying so lets the contact lookup report a
+                    # tissue for an atlas that does not use freesurfer indices.
+                    "tissue": "GM",
                     "r": int(round((entry.red or 0) * 255)),
                     "g": int(round((entry.green or 0) * 255)),
                     "b": int(round((entry.blue or 0) * 255)),

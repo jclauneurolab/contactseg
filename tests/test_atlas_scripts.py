@@ -921,3 +921,63 @@ def test_labels_are_written_before_the_summary(tmp_path, atlas_volume, lut, coor
 
     assert out.exists()
     assert len(pd.read_csv(out, sep="\t")) == 4
+
+
+def test_a_surface_atlas_reports_cortical_grey_not_unknown_tissue(tmp_path, coords):
+    """A parcellation off the ribbon knows its tissue even without fs indices.
+
+    Before, any atlas that did not use freesurfer's numbering reported every
+    contact as tissue "Unknown", which reads like a failed lookup rather than
+    like a table that never carried tissue information.
+    """
+    from lookup_atlas_labels import lookup_atlas_labels
+
+    affine = np.eye(4)
+    affine[:3, 3] = -16
+    data = np.zeros((32, 32, 32), dtype=np.int32)
+    data[10:22, 10:22, 10:22] = 1301
+
+    dseg = tmp_path / "atlas.nii.gz"
+    nib.save(nib.Nifti1Image(data, affine), str(dseg))
+
+    lut = tmp_path / "atlas.tsv"
+    pd.DataFrame(
+        [{"label": 1301, "name": "R_SM3_C", "hemi": "R", "tissue": "GM"}]
+    ).to_csv(lut, sep="\t", index=False)
+
+    labels = lookup_atlas_labels(
+        coords, str(dseg), str(lut), tmp_path / "labels.tsv", 1.0, 1.0, 3.0, 10.0
+    )
+
+    inside = labels[labels["structure"] != "Unknown"]
+    assert len(inside)
+    assert set(inside["tissue"]) == {"GM"}
+    # a cortex-only atlas has no white matter to put probability on
+    assert inside["p_GM"].notna().all()
+    assert labels["p_WM"].isna().all()
+
+
+def test_an_atlas_that_declares_no_tissue_says_so(tmp_path, coords):
+    """Silence in the lookup table is reported as n/a, not as Unknown."""
+    from lookup_atlas_labels import lookup_atlas_labels
+
+    affine = np.eye(4)
+    affine[:3, 3] = -16
+    data = np.zeros((32, 32, 32), dtype=np.int32)
+    data[10:22, 10:22, 10:22] = 7
+
+    dseg = tmp_path / "atlas.nii.gz"
+    nib.save(nib.Nifti1Image(data, affine), str(dseg))
+
+    lut = tmp_path / "atlas.tsv"
+    pd.DataFrame([{"label": 7, "name": "someparcel"}]).to_csv(
+        lut, sep="\t", index=False
+    )
+
+    labels = lookup_atlas_labels(
+        coords, str(dseg), str(lut), tmp_path / "labels.tsv", 1.0, 1.0, 3.0, 10.0
+    )
+
+    inside = labels[labels["structure"] != "Unknown"]
+    assert len(inside)
+    assert set(inside["tissue"]) == {"n/a"}
