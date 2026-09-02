@@ -1,0 +1,12 @@
+---
+name: analysis
+channels: [conda-forge, bioconda, defaults]
+dependencies:
+  - python=3.10
+  - pandas
+  - numpy
+  - scipy
+  - scikit-image
+  - matplotlib
+  - svgutils
+  - nibabel

@@ -109,6 +109,10 @@ parse_args:
     default: false
     required: false 
     type: str 
+  --non_interpolated:
+    help: 'Do not resample images during registration (default: %(default)s)'
+    default: False
+    action: 'store_true'
 
 
 containers: {}

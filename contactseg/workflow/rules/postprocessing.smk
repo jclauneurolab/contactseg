@@ -18,6 +18,10 @@ rule register_contacts:
             session="post",
             **inputs["post_ct"].wildcards,
         ),
+    params:
+        non_interpolated=config["non_interpolated"],
+    conda:
+        "../envs/image_processing.yaml"
     script:
         "../scripts/apply_registration.py"
 
@@ -50,6 +54,8 @@ rule contacts_qc:
             suffix="qc.html",
             **inputs["post_ct"].wildcards,
         ),
+    conda:
+        "../envs/analysis.yaml"
     script:
         "../scripts/contacts_qc.py"
 

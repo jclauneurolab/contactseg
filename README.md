@@ -1,61 +1,72 @@
 # Automatic Contact Segmentation
 
-**Automatic Contact Segmentation** is a BIDS App for localizing stereoelectroencephalography (SEEG) contacts from post-operative CT scans. It uses the [nnUNetv2 framework](https://github.com/MIC-DKFZ/nnUNet) to train a 3D U-Net model for automatic SEEG contact segmentation. The app integrates [Snakemake](https://snakemake.readthedocs.io/) and [SnakeBIDS](https://github.com/akhanf/snakebids) for workflow management and reproducibility. The project is managed using [uv](https://github.com/astral-sh/uv), which provides fast dependency resolution and environment management.
+**Automatic Contact Segmentation** is a BIDS App for localizing stereoelectroencephalography (SEEG) contacts from post-operative CT scans. It uses the [nnUNetv2 framework](https://github.com/MIC-DKFZ/nnUNet) to train a 3D U-Net model for automatic SEEG contact segmentation. The app integrates [Snakemake](https://snakemake.readthedocs.io/) and [SnakeBIDS](https://github.com/akhanf/snakebids) for workflow management and reproducibility. The project is managed using [pixi](https://github.com/prefix-dev/pixi), which provides fast dependency resolution and environment management.
 
-To install the app, first install `uv`. On macOS and Linux, run:
+---
+
+## Installation & Setup
+
+### 1. Install Pixi
+If you do not have `pixi` installed, run:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+curl -fsSL https://pixi.sh/install.sh | bash
 ```
 
-On Windows, run:
-```
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+> **Note:** If `pixi` is already installed but yields a lock file version mismatch error, update it by running `pixi self-update`.
+
+### 2. Set Up Environment & Git LFS
+This repository uses **Git LFS** to manage sample datasets and large binary assets. After cloning the repository, initialize LFS via `pixi` to fetch the complete NIfTI datasets rather than 134-byte pointer files:
+
+```bash
+# Install environment dependencies
+pixi install
+
+# Initialize Git LFS and pull sample datasets
+pixi run git-lfs install --local
+pixi run git-lfs pull
 ```
 
-Alternatively, you can install it from PyPI using:
+---
 
-```
-pip install uv
-```
-
-or with pipx:
-
-```
-pipx install uv
-```
-
-Once uv is installed, create and activate a virtual environment:
-
-```
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-Then install the package in editable mode:
-
-```
-uv pip install -e .
-```
+## Verification
 
 To verify that the installation was successful, run:
 
-```
-contactseg -h
-```
-
-This should display the help message for the CLI. If it doesn’t, ensure that your virtual environment is activated and that the installation completed without errors.
-
-To use the BIDS App, run:
-
-```
-contactseg /path/to/bids/dataset /path/to/output/derivatives participant --cores all
+```bash
+pixi run contactseg -h
 ```
 
-Replace /path/to/bids/dataset with the path to your BIDS-compliant input dataset and /path/to/output/derivatives with the desired output directory.
+If you see a help message listing all available command-line options, you’re ready to use `contactseg`!
 
-If you're developing the app and want to install development dependencies such as linters and formatters, run:
+---
 
+## Usage
+
+To execute the BIDS App on a dataset:
+
+```bash
+pixi run contactseg /path/to/bids/dataset /path/to/output/derivatives participant --cores all
 ```
-uv pip install -e .[dev]
+
+### Running with GPU Acceleration (Recommended)
+When executing on a CUDA-enabled GPU node:
+
+```bash
+pixi run contactseg /path/to/bids/dataset /path/to/output/derivatives participant --transform --label --cores all --use_gpu
+```
+
+---
+
+## Development
+
+If you are developing the app and need development dependencies (linters and formatters):
+
+```bash
+# Install development environment
+pixi install -e dev
+
+# Run quality checks and formatting
+pixi run -e dev quality_check
+pixi run -e dev quality_fix
 ```
