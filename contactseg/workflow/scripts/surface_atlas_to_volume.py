@@ -1,4 +1,4 @@
-"""Map a surface parcellation into the volume, one hemisphere at a time.
+"""Map a surface parcellation into the volume, hemisphere by hemisphere.
 
 Surface atlases (the Yale Brain Atlas, freesurfer's aparc) only exist on the
 cortical ribbon, so they are painted into the volume with a ribbon-constrained
@@ -9,6 +9,7 @@ the contact lookup then reads like any other atlas.
 
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import nibabel as nib
@@ -16,22 +17,42 @@ import numpy as np
 import pandas as pd
 
 
-def label_to_volume(label_gii, midthickness, white, pial, ref_vol, output_nii):
-    """Run the workbench ribbon-constrained label to volume mapping."""
-    subprocess.run(
-        [
-            "wb_command",
-            "-label-to-volume-mapping",
-            label_gii,
-            midthickness,
-            ref_vol,
-            output_nii,
-            "-ribbon-constrained",
-            white,
-            pial,
-        ],
-        check=True,
-    )
+# how each mode maps a surface atlas into the volume:
+#   workers      hemispheres mapped at once
+#   voxel_subdiv samples per voxel edge inside the ribbon test, or None for
+#                workbench's own default of 3 (so 3x3x3 = 27 samples a voxel)
+MODES = {
+    "slow": {"workers": 1, "voxel_subdiv": None},
+    "parallel": {"workers": 2, "voxel_subdiv": None},
+    "fast": {"workers": 2, "voxel_subdiv": 1},
+}
+
+
+def label_to_volume(
+    label_gii, midthickness, white, pial, ref_vol, output_nii, voxel_subdiv=None
+):
+    """Run the workbench ribbon-constrained label to volume mapping.
+
+    The ribbon test is where the time goes: every candidate voxel is split into
+    ``voxel_subdiv**3`` samples and each is tested against the shell between
+    the white and pial surfaces. Workbench defaults to 3, i.e. 27 samples a
+    voxel; 1 tests the voxel centre alone.
+    """
+    command = [
+        "wb_command",
+        "-label-to-volume-mapping",
+        label_gii,
+        midthickness,
+        ref_vol,
+        output_nii,
+        "-ribbon-constrained",
+        white,
+        pial,
+    ]
+    if voxel_subdiv:
+        command += ["-voxel-subdiv", str(int(voxel_subdiv))]
+
+    subprocess.run(command, check=True)
 
 
 def detect_background(data):
@@ -145,6 +166,7 @@ def surface_atlas_to_volume(
     hemis,
     output_nii,
     output_tsv,
+    mode="slow",
 ):
     """
     Function that maps a surface atlas into subject volume space.
@@ -165,25 +187,40 @@ def surface_atlas_to_volume(
         Path to save the merged segmentation.
     output_tsv : str
         Path to save the lookup table naming the merged labels.
+    mode : str
+        One of ``MODES``: how many hemispheres to map at once, and at what
+        voxel subdivision.
 
     Returns
     -------
     None
     """
 
+    settings = MODES[mode]
+
     with tempfile.TemporaryDirectory() as tmpdir:
-        hemi_niis = []
-        for i, label in enumerate(label_gii):
-            hemi_nii = str(Path(tmpdir) / f"hemi-{i}_dseg.nii.gz")
-            label_to_volume(
-                label,
-                midthickness[i],
-                white[i],
-                pial[i],
-                ref_vol,
-                hemi_nii,
+        hemi_niis = [
+            str(Path(tmpdir) / f"hemi-{i}_dseg.nii.gz")
+            for i in range(len(label_gii))
+        ]
+
+        # the hemispheres are independent, and each wb_command call is a
+        # subprocess, so threads here really do run them side by side
+        with ThreadPoolExecutor(max_workers=settings["workers"]) as pool:
+            list(
+                pool.map(
+                    lambda i: label_to_volume(
+                        label_gii[i],
+                        midthickness[i],
+                        white[i],
+                        pial[i],
+                        ref_vol,
+                        hemi_niis[i],
+                        voxel_subdiv=settings["voxel_subdiv"],
+                    ),
+                    range(len(label_gii)),
+                )
             )
-            hemi_niis.append(hemi_nii)
 
         backgrounds = merge_hemispheres(hemi_niis, key_offsets, output_nii)
 
@@ -201,4 +238,5 @@ if __name__ == "__main__":
         hemis=snakemake.params.hemis,
         output_nii=snakemake.output.atlas_dseg,
         output_tsv=snakemake.output.lut,
+        mode=snakemake.params.mode,
     )

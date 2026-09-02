@@ -185,6 +185,21 @@ corners of the grid, which cannot be cortex, and dropped before the merge.
 Taking zero on faith would let the first hemisphere claim the whole head and
 the second one disappear.
 
+That mapping is the slowest step of a labelling run — on a sub-millimetre T1w
+it can take twenty minutes — and `--surface_mapping` chooses how hard it works:
+
+| Mode | Hemispheres at once | `-voxel-subdiv` | Result |
+| --- | --- | --- | --- |
+| `slow` (default) | 1 | 3 (workbench's default) | reference |
+| `parallel` | 2 | 3 | identical, on two cores |
+| `fast` | 2 | 1 | rougher parcel edge at the ribbon boundary |
+
+`parallel` changes nothing but the wall clock, so prefer it whenever two cores
+are free. `fast` also stops subdividing each voxel into 3×3×3 samples for the
+ribbon test and takes the voxel centre instead: most of the cost of the step,
+and most of the precision with which a parcel boundary is placed inside a
+voxel. Contacts near a parcel edge are the ones that move.
+
 `--map_atlas_surfaces` runs the mapping the other way as well, so volumetric
 atlases get a surface representation via
 `wb_command -volume-to-surface-mapping` and `-metric-label-import`. Both

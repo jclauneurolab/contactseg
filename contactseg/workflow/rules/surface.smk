@@ -229,9 +229,11 @@ if get_surface_atlases():
             "subj"
         conda:
             "../envs/surface.yaml"
+        threads: len(config["hemi"]) if config["surface_mapping"] != "slow" else 1
         params:
             key_offsets=lambda wildcards: get_key_offsets(wildcards.atlas),
             hemis=config["hemi"],
+            mode=config["surface_mapping"],
         script:
             "../scripts/surface_atlas_to_volume.py"
 

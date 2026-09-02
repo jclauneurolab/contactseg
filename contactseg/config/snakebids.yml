@@ -191,6 +191,19 @@ parse_args:
       volumetric one. Requires --freesurfer_dir (default: %(default)s)
     default: False
     action: 'store_true'
+  --surface_mapping:
+    help: >
+      How hard to work when painting a surface atlas into the volume, which is
+      the slowest step of a labelling run. slow maps one hemisphere at a time
+      at workbench's own voxel subdivision. parallel maps both at once, which
+      is the same result on two cores. fast also drops the subdivision to 1,
+      trading a rougher parcel edge at the ribbon boundary for a much shorter
+      run (default: %(default)s)
+    choices:
+      - slow
+      - parallel
+      - fast
+    default: slow
 
 
 containers: {}

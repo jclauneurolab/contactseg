@@ -1014,3 +1014,59 @@ def test_a_name_that_already_carries_its_hemisphere_is_not_prefixed_again(tmp_pa
         "R_TP2.2_A",
         "R_superiortemporal",
     }
+
+
+def test_the_mapping_mode_controls_parallelism_and_subdivision(tmp_path, monkeypatch):
+    """slow / parallel / fast differ only in worker count and -voxel-subdiv."""
+    import surface_atlas_to_volume as mod
+
+    calls = []
+
+    def fake_label_to_volume(
+        label_gii, midthickness, white, pial, ref_vol, output_nii, voxel_subdiv=None
+    ):
+        calls.append(voxel_subdiv)
+        affine = np.eye(4)
+        data = np.zeros((8, 8, 8), dtype=np.int32)
+        data[2:6, 2:6, 2:6] = 1
+        nib.save(nib.Nifti1Image(data, affine), output_nii)
+
+    monkeypatch.setattr(mod, "label_to_volume", fake_label_to_volume)
+
+    assert mod.MODES["slow"] == {"workers": 1, "voxel_subdiv": None}
+    assert mod.MODES["parallel"]["workers"] == 2
+    assert mod.MODES["fast"] == {"workers": 2, "voxel_subdiv": 1}
+
+    from annot_to_label_gii import annot_to_label_gii
+
+    label_files = []
+    for hemi in ("L", "R"):
+        ctab = np.array([[25, 5, 25, 0, 0], [100, 20, 30, 0, 0]], dtype=np.int32)
+        ctab[:, 4] = ctab[:, 0] + ctab[:, 1] * 2**8 + ctab[:, 2] * 2**16
+        annot = tmp_path / f"{hemi}.annot"
+        nib.freesurfer.write_annot(
+            str(annot),
+            np.array([0, 1, 1, 0], dtype=np.int32),
+            ctab,
+            ["unknown", "parcelA"],
+            fill_ctab=False,
+        )
+        gii = tmp_path / f"{hemi}.label.gii"
+        annot_to_label_gii(str(annot), str(gii), f"CORTEX_{hemi}")
+        label_files.append(str(gii))
+
+    for mode, expected in (("slow", [None, None]), ("fast", [1, 1])):
+        calls.clear()
+        mod.surface_atlas_to_volume(
+            label_gii=label_files,
+            midthickness=label_files,
+            white=label_files,
+            pial=label_files,
+            ref_vol=str(tmp_path / "ref.nii.gz"),
+            key_offsets=[0, 1000],
+            hemis=["L", "R"],
+            output_nii=str(tmp_path / f"{mode}.nii.gz"),
+            output_tsv=str(tmp_path / f"{mode}.tsv"),
+            mode=mode,
+        )
+        assert calls == expected
