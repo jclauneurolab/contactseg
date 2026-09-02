@@ -981,3 +981,36 @@ def test_an_atlas_that_declares_no_tissue_says_so(tmp_path, coords):
     inside = labels[labels["structure"] != "Unknown"]
     assert len(inside)
     assert set(inside["tissue"]) == {"n/a"}
+
+
+def test_a_name_that_already_carries_its_hemisphere_is_not_prefixed_again(tmp_path):
+    """Yale parcels are "L_TP1_B"; prefixing them gave "L_L_TP1_B" everywhere."""
+    from atlas_dseg_to_nrrd import read_lut as nrrd_lut
+    from gen_colortable import read_lut as ctbl_lut
+    from lookup_atlas_labels import read_lut as label_lut
+
+    path = tmp_path / "lut.tsv"
+    pd.DataFrame(
+        [
+            {"label": 1, "name": "L_TP1_B", "hemi": "L", "tissue": "GM"},
+            {"label": 1002, "name": "R_TP2.2_A", "hemi": "R", "tissue": "GM"},
+            # a parcellation that does leave the side out still gets it
+            {"label": 2003, "name": "superiortemporal", "hemi": "R", "tissue": "GM"},
+        ]
+    ).to_csv(path, sep="\t", index=False)
+
+    names, _, _ = label_lut(str(path))
+    assert names[1] == "L_TP1_B"
+    assert names[1002] == "R_TP2.2_A"
+    assert names[2003] == "superiortemporal (Right)"
+
+    assert {name for _, name, _ in ctbl_lut(str(path))} == {
+        "L_TP1_B",
+        "R_TP2.2_A",
+        "R_superiortemporal",
+    }
+    assert {name for name, _ in nrrd_lut(str(path)).values()} == {
+        "L_TP1_B",
+        "R_TP2.2_A",
+        "R_superiortemporal",
+    }

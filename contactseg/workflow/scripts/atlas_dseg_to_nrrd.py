@@ -29,6 +29,38 @@ def label_color(key, table_row=None):
     return colorsys.hsv_to_rgb((key * GOLDEN_RATIO) % 1.0, 0.6, 0.9)
 
 
+def has_hemisphere(name):
+    """Whether a structure name already says which hemisphere it is in.
+
+    Some atlases number their parcels per hemisphere and leave the side out of
+    the name (freesurfer's DK set: "superiortemporal"); others carry it (the
+    Yale atlas: "L_TP1_B"). Prefixing the second kind gives "L_L_TP1_B", so the
+    side is added only where the name is silent about it.
+    """
+    lowered = name.lower()
+
+    return (
+        lowered.startswith(
+            (
+                "l_",
+                "r_",
+                "lh_",
+                "rh_",
+                "lh.",
+                "rh.",
+                "left-",
+                "right-",
+                "ctx-lh",
+                "ctx-rh",
+                "wm-lh",
+                "wm-rh",
+            )
+        )
+        or "(left)" in lowered
+        or "(right)" in lowered
+    )
+
+
 def read_lut(lut_file):
     """Read a dseg.tsv into ``{index: (name, row)}``, or an empty dict."""
     if not lut_file:
@@ -40,7 +72,11 @@ def read_lut(lut_file):
     lut = {}
     for _, row in table.iterrows():
         name = str(row["name"])
-        if "hemi" in table.columns and str(row["hemi"]) in ("L", "R"):
+        if (
+            "hemi" in table.columns
+            and str(row["hemi"]) in ("L", "R")
+            and not has_hemisphere(name)
+        ):
             name = f"{row['hemi']}_{name}"
         lut[int(row["label"])] = (name, row)
 
