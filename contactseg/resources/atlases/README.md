@@ -13,9 +13,13 @@ which are read from the FreeSurfer subject directory instead.
 
 ## Volumes to add
 
-The two volumes below are large and are not carried in this patch. They already
-exist on the `jthrower/atlas_labels` branch, so the quickest way to populate
-them is:
+Nothing in this directory is tracked except the table above and this file.
+`.gitignore` excludes the volumes and the annotations, so a patch or a bundle
+never carries them and never overwrites what you downloaded. Populating them is
+a setup step, done once per checkout.
+
+The two volumes below already exist on the `jthrower/atlas_labels` branch, so
+the quickest way to get them is:
 
 ```bash
 git checkout origin/jthrower/atlas_labels -- resources/atlases/
@@ -32,9 +36,14 @@ rm -r resources/atlases
 | `tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz` | fixed image of `reg_t1w_to_template` |
 | `tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii.gz` | `--atlas CerebrA` |
 
-`.nii.gz` is tracked with git-lfs in this repository, and the CerebrA
-segmentation compresses from 17 MB to under 300 kB, so store it gzipped rather
-than as the raw `.nii` the atlas ships as.
+Store the CerebrA segmentation gzipped rather than as the raw `.nii` the atlas
+ships as — it goes from 17 MB to under 300 kB, and the config names it
+`.nii.gz`.
+
+`.nii.gz` is tracked with git-lfs elsewhere in this repository, which is the
+reason these two are ignored rather than committed: a bundle or a patch carries
+git history but not LFS objects, so a committed volume arrives as a 130-byte
+pointer whose content cannot be fetched from anywhere.
 
 ## Surface atlases
 
