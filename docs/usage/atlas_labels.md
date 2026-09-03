@@ -163,6 +163,11 @@ The packaged atlas files are committed, the volumes through git-lfs, so
 `git lfs install` has to have been run before cloning. A clone made without it
 gets 130-byte pointers instead of volumes; `git lfs pull` repairs one.
 
+Each packaged atlas is third-party data under its own licence, and a paper that
+should be cited alongside this workflow — CerebrA under CC BY 4.0, the Yale
+Brain Atlas for academic use with attribution. The README in
+`contactseg/resources/atlases/` carries the licences and the citations.
+
 Resampling an fsaverage atlas needs fsaverage's registration sphere, taken
 from `<freesurfer_dir>/fsaverage/` or `$FREESURFER_HOME/subjects/fsaverage/`
 rather than being redistributed.

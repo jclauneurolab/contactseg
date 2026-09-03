@@ -28,18 +28,68 @@ A patch or a bundle carries git history but not lfs objects, so the two volumes
 have to come from a real clone or fetch of the remote, not from a `git am` of an
 emailed patch.
 
-### Provenance
-
-| File | Source |
-| --- | --- |
-| MNI152NLin2009cSym T1w, CerebrA | the CerebrA atlas release, `nist.mni.mcgill.ca/cerebra` |
-| YBA 696 parcels | `github.com/YaleBrainAtlas/YaleBrainAtlas`, `data/YBA_696parcels` |
-
 The CerebrA segmentation is stored gzipped rather than as the raw `.nii` the
 atlas ships as — 17 MB down to under 300 kB, and the config names it `.nii.gz`.
+No voxel values or labels were altered in any of the files here.
 
-Check each atlas's own licence before redistributing this directory outside the
-lab; they are not all under the same terms as the code.
+## Attribution
+
+The files in this directory are third-party data redistributed under their own
+licences, which are **not** the MIT licence covering contactseg's code. Anyone
+using an atlas through this workflow inherits its terms and should cite its
+paper, not only this tool.
+
+### CerebrA, and the MNI-ICBM152 2009c template it is defined on
+
+`tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii.gz`,
+`tpl-MNI152NLin2009cSym_atlas-CerebrA_dseg.tsv`,
+`tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz`
+
+Released under a [Creative Commons Attribution 4.0 International licence
+(CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/), which permits
+redistribution — including commercially — provided the source is credited, the
+licence named, and any changes indicated. Redistributed here unmodified except
+for gzip compression.
+
+> Manera, A.L., Dadar, M., Fonov, V. & Collins, D.L. CerebrA, registration and
+> manual label correction of Mindboggle-101 atlas for MNI-ICBM152 template.
+> *Scientific Data* **7**, 237 (2020).
+> https://doi.org/10.1038/s41597-020-0557-9
+
+CerebrA is a manually corrected registration of the Mindboggle-101 labels onto
+the MNI-ICBM152 2009c symmetric template. Both underlying works carry their own
+citations, and the template ships here as its own file:
+
+> Fonov, V., Evans, A.C., Botteron, K., Almli, C.R., McKinstry, R.C. &
+> Collins, D.L. Unbiased average age-appropriate atlases for pediatric studies.
+> *NeuroImage* **54**(1), 313–327 (2011).
+> https://doi.org/10.1016/j.neuroimage.2010.07.033
+
+> Klein, A. & Tourville, J. 101 labeled brain images and a consistent human
+> cortical labeling protocol. *Frontiers in Neuroscience* **6**, 171 (2012).
+> https://doi.org/10.3389/fnins.2012.00171
+
+### Yale Brain Atlas
+
+`YBA_696_LH_fsaverage.annot`, `YBA_696_RH_fsaverage.annot`
+
+> McGrath, H., Zaveri, H.P., Collins, E., Jafar, T., Chishti, O., Obaid, S.,
+> Ksendzovsky, A., Wu, K., Papademetris, X. & Spencer, D.D. High-resolution
+> cortical parcellation based on conserved brain landmarks for localization of
+> multimodal data to the nearest centimeter. *Scientific Reports* **12**, 18778
+> (2022). https://doi.org/10.1038/s41598-022-21543-3
+
+Project site: https://yalebrainatlas.github.io/YaleBrainAtlas/ — the authors ask
+that it be linked wherever the atlas is used.
+
+Note the licence is stated two different ways by the two places the atlas is
+distributed from: the [NITRC entry](https://www.nitrc.org/projects/yale_atlas_2021/)
+records **Attribution Non-Commercial**, while the
+[GitHub repository](https://github.com/YaleBrainAtlas/YaleBrainAtlas) declares
+**MIT** for the repository as a whole. This directory treats the stricter of the
+two as binding: the annotations are redistributed for academic and research use
+with attribution, and anyone intending commercial use should settle the question
+with the atlas authors first rather than reading it off either page.
 
 ## Surface atlases
 
