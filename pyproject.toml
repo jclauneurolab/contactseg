@@ -73,3 +73,4 @@ quality_fix = "isort contactseg/*.py && black contactseg && snakefmt contactseg"
 
 [tool.pixi.dependencies]
 git-lfs = ">=3.7.1,<4"
+antspyx = ">=0.6.3,<0.7"
