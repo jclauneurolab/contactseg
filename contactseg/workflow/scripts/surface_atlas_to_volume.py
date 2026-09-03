@@ -200,8 +200,7 @@ def surface_atlas_to_volume(
 
     with tempfile.TemporaryDirectory() as tmpdir:
         hemi_niis = [
-            str(Path(tmpdir) / f"hemi-{i}_dseg.nii.gz")
-            for i in range(len(label_gii))
+            str(Path(tmpdir) / f"hemi-{i}_dseg.nii.gz") for i in range(len(label_gii))
         ]
 
         # the hemispheres are independent, and each wb_command call is a
