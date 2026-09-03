@@ -67,14 +67,14 @@ if config["label"]:
                 extension=".fcsv",
                 **inputs["post_ct"].wildcards,
             ),
-        params:
-            electrode_type=str(
-                Path(workflow.basedir).parent / config["electrode_type"]
-            ),
         group:
             "subj"
         conda:
             "../envs/analysis.yaml"
+        params:
+            electrode_type=str(
+                Path(workflow.basedir).parent / config["electrode_type"]
+            ),
         script:
             "../scripts/label.py"
 
@@ -118,7 +118,9 @@ if config["atlas_labels"]:
 
     def get_smriprep_probseg(label):
         def get_probseg(wildcards):
-            smriprep_dir = config.get("SMRIPREP_DIR") or config.get("SMRIPREP-DIR")
+            smriprep_dir = config.get("SMRIPREP_DIR") or config.get(
+                "SMRIPREP-DIR"
+            )
             if smriprep_dir:
                 session = getattr(wildcards, "session", "pre")
                 return f"{smriprep_dir}/sub-{wildcards.subject}/ses-{session}/anat/sub-{wildcards.subject}_ses-{session}_label-{label}_probseg.nii.gz"

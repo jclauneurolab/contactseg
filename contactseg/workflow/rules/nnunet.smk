@@ -23,11 +23,11 @@ def get_cmd_copy_inputs(wildcards, input):
 
 
 rule download_model:
+    output:
+        nnUNet_model=get_model(),
     params:
         url=config["resource_urls"]["nnUNet_model"],
         model_dir=Path(utils.get_download_dir()) / "model",
-    output:
-        nnUNet_model=get_model(),
     shell:
         "mkdir -p {params.model_dir} && wget https://{params.url} -O {output}"
 
@@ -44,13 +44,6 @@ rule model_inference:
             **inputs["post_ct"].wildcards,
         ),
         nnUNet_model=get_model(),
-    params:
-        device="cuda" if config["use_gpu"] else "cpu",
-        cmd_copy_inputs=get_cmd_copy_inputs,
-        temp_lbl="templbl/temp_000.nii.gz",
-        model_dir="tempmodel",
-        in_folder="tempimg",
-        out_folder="templbl",
     output:
         contact_seg=bids(
             root=deriv_root,
@@ -61,17 +54,24 @@ rule model_inference:
         ),
     log:
         bids(root="logs", suffix="nnUNet.txt", **inputs["post_ct"].wildcards),
-    conda:
-        "../envs/nnunet.yaml"
+    group:
+        "subj"
     shadow:
         "minimal"
+    conda:
+        "../envs/nnunet.yaml"
     threads: 4
     resources:
         gpus=1 if config["use_gpu"] else 0,
         mem_mb=16000,
         time=30 if config["use_gpu"] else 60,
-    group:
-        "subj"
+    params:
+        device="cuda" if config["use_gpu"] else "cpu",
+        cmd_copy_inputs=get_cmd_copy_inputs,
+        temp_lbl="templbl/temp_000.nii.gz",
+        model_dir="tempmodel",
+        in_folder="tempimg",
+        out_folder="templbl",
     shell:
         #create temp folders
         #cp input image to temp folder

@@ -18,10 +18,10 @@ rule register_contacts:
             session="post",
             **inputs["post_ct"].wildcards,
         ),
-    params:
-        non_interpolated=config["non_interpolated"],
     conda:
         "../envs/image_processing.yaml"
+    params:
+        non_interpolated=config["non_interpolated"],
     script:
         "../scripts/apply_registration.py"
 
@@ -32,7 +32,7 @@ rule contacts_qc:
         t1w_img=rules.n4biascorr.output.corrected_t1w,
         contact_fcsv_labelled=bids(
             root=deriv_root,
-            datatype="ieeg",           
+            datatype="ieeg",
             suffix="coords",
             session="post",
             space="T1w",

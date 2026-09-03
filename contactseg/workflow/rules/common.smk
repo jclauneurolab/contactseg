@@ -2,6 +2,7 @@ from pathlib import Path
 
 deriv_root = str(Path(config["output_dir"]) / "derivatives" / "contactseg")
 
+
 def get_reg_matrix():
     if not config["manual_reg_matrix"]:
         return bids(
