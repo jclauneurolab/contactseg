@@ -100,4 +100,6 @@ def get_final_output():
                 )
             )
         )
+    if config["atlas_labels"]:
+        final.extend(get_atlas_labels_output())
     return final

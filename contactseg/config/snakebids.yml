@@ -102,6 +102,108 @@ parse_args:
     help: 'Do not resample images during registration (default: %(default)s)'
     default: False
     action: 'store_true'
+  --atlas_labels:
+    help: >
+      Assign an anatomical label to every contact by looking it up in an atlas
+      (default: %(default)s)
+    default: False
+    action: 'store_true'
+  --atlas_source:
+    help: >
+      Where the subject-to-template transforms and tissue segmentations used for
+      atlas labelling come from. antspy computes them in the workflow, smriprep
+      and freesurfer import them from an existing derivatives dataset
+      (default: %(default)s)
+    choices:
+      - antspy
+      - smriprep
+      - freesurfer
+    default: antspy
+  --smriprep_dir:
+    help: >
+      Path to an sMRIPrep derivatives dataset. Required for
+      --atlas_source smriprep (default: %(default)s)
+    default: False
+    type: str
+  --freesurfer_dir:
+    help: >
+      Path to a FreeSurfer or FastSurfer subjects directory. Required for
+      --atlas_source freesurfer, and for any surface-based atlas
+      (default: %(default)s)
+    default: False
+    type: str
+  --atlas:
+    help: >
+      Atlas(es) used to label contacts. Volumetric atlases defined in template
+      space are warped to the subject, surface atlases are resampled onto the
+      subject surfaces and mapped into the volume (default: %(default)s)
+    choices:
+      - CerebrA
+      - Yale
+      - DKTatlas
+      - aparcaseg
+    default:
+      - CerebrA
+    nargs: '+'
+  --template:
+    help: 'Volumetric template used for atlas labelling (default: %(default)s)'
+    choices:
+      - MNI152NLin2009cSym
+      - MNI152NLin2009cAsym
+    default: MNI152NLin2009cSym
+  --sigma_contact:
+    help: >
+      Standard deviation (mm) describing the physical extent of a contact plus
+      its localisation error, used to weight the atlas vote around each contact
+      (default: %(default)s)
+    default: 1.0
+    type: float
+  --sigma_reg:
+    help: >
+      Standard deviation (mm) of the residual registration error, added in
+      quadrature to --sigma_contact. Raise it to propagate a less trusted
+      registration into wider, less confident label distributions
+      (default: %(default)s)
+    default: 1.0
+    type: float
+  --derivatives_reg:
+    help: >
+      How the anatomical the derivatives were computed on is aligned to the
+      contactseg reference T1w. rigid measures the offset with a rigid
+      registration, which is what you want whenever sMRIPrep or FreeSurfer was
+      run on a different acquisition (a non-contrast T1w, say). identity skips
+      it, and is only correct when the derivatives were computed on the very
+      same image (default: %(default)s)
+    choices:
+      - rigid
+      - identity
+    default: rigid
+  --export_nrrd:
+    help: >
+      Also export every atlas segmentation as a 3D Slicer .seg.nrrd
+      segmentation (default: %(default)s)
+    default: False
+    action: 'store_true'
+  --map_atlas_surfaces:
+    help: >
+      Additionally map every requested atlas onto the subject surfaces, so that
+      volumetric atlases get a surface representation and surface atlases get a
+      volumetric one. Requires --freesurfer_dir (default: %(default)s)
+    default: False
+    action: 'store_true'
+  --surface_mapping:
+    help: >
+      How hard to work when painting a surface atlas into the volume, which is
+      the slowest step of a labelling run. slow maps one hemisphere at a time
+      at workbench's own voxel subdivision. parallel maps both at once, which
+      is the same result on two cores. fast also drops the subdivision to 1,
+      trading a rougher parcel edge at the ribbon boundary for a much shorter
+      run (default: %(default)s)
+    choices:
+      - slow
+      - parallel
+      - fast
+    default: slow
 
 
 containers: {}
@@ -110,6 +212,119 @@ resource_urls:
   nnUNet_model: "zenodo.org/records/14519315/files/nnunet_seeg_250_fullres.zip"
 
 electrode_type: "resources/electrodes.config"
+
+atlas_dir: "resources/atlases"
+
+# session label used when looking inside the sMRIPrep / FreeSurfer derivatives
+derivatives_session: pre
+
+# the anatomical each derivatives dataset was computed on, which defines the
+# frame its transforms, segmentations and surfaces live in. With
+# --derivatives_reg rigid this image is registered to the contactseg T1w and
+# the resulting 4x4 RAS matrix bridges the two.
+#
+# A bare string is resolved inside the derivatives dataset. To point at the raw
+# acquisition in the BIDS dataset instead -- the non-contrast T1w sMRIPrep or
+# FreeSurfer was run on, say -- give the entry a root:
+#
+#   freesurfer:
+#     root: bids
+#     path: "anat/sub-{subject}_ses-{session}_run-01_T1w.nii.gz"
+#
+# Paths are relative to the subject (or subject/session) directory of that
+# root, and may use {subject} and {session}. Prefer the derivatives dataset's
+# own reference image when it has one: that image *is* the frame its transforms
+# were computed in, whereas a raw acquisition only matches it when the pipeline
+# used exactly that one image.
+derivatives_anat:
+  smriprep: "anat/sub-{subject}_desc-preproc_T1w.nii.gz"
+  freesurfer: "mri/orig.mgz"
+
+# reference image for each volumetric template, relative to atlas_dir
+templates:
+  MNI152NLin2009cSym:
+    T1w: "tpl-MNI152NLin2009cSym_res-1_T1w.nii.gz"
+
+# one entry per atlas selectable with --atlas
+#   space: template name, 'fsaverage' or 'native'
+#   type:  'volume' (dseg) or 'surface' (label gifti / freesurfer annot)
+#   dseg / label: file pattern, relative to atlas_dir unless space is 'native',
+#                 in which case it is relative to the freesurfer subject dir
+#   lut:   label lookup table (BIDS dseg.tsv with label/name/hemi columns), or
+#          'FreeSurferColorLUT' to read the LUT shipped with the subject dir
+atlases:
+  CerebrA:
+    space: MNI152NLin2009cSym
+    type: volume
+    dseg: "tpl-MNI152NLin2009cSym_res-1_atlas-CerebrA_dseg.nii.gz"
+    lut: "tpl-MNI152NLin2009cSym_atlas-CerebrA_dseg.tsv"
+  # Yale Brain Atlas, 696 parcels, distributed as fsaverage annotations at
+  # github.com/YaleBrainAtlas/YaleBrainAtlas (data/YBA_696parcels). Drop both
+  # hemispheres into resources/atlases; the parcel names travel inside the
+  # annotation, so no lookup table is needed.
+  Yale:
+    space: fsaverage
+    type: surface
+    label: "YBA_696_{hemi_up}_fsaverage.annot"
+    # both hemispheres number their parcels from the same range, so the right
+    # is shifted clear of the left before they are merged into one volume
+    key_offset:
+      L: 0
+      R: 1000
+  DKTatlas:
+    space: native
+    type: surface
+    label: "label/{hemi_fs}.aparc.DKTatlas.annot"
+    lut: FreeSurferColorLUT
+    # matches freesurfer's own ctx-lh-* / ctx-rh-* indices
+    key_offset:
+      L: 1000
+      R: 2000
+  aparcaseg:
+    space: native
+    type: volume
+    dseg: "mri/aparc+aseg.mgz"
+    lut: FreeSurferColorLUT
+
+# freesurfer surfaces pulled in for surface-based labelling
+surface_files:
+  white: "surf/{hemi_fs}.white"
+  pial: "surf/{hemi_fs}.pial"
+  sphere: "surf/{hemi_fs}.sphere.reg"
+
+# volume whose header carries the c_ras offset between freesurfer tkrRAS and
+# the scanner RAS the contacts live in
+surface_reference: "mri/orig.mgz"
+
+# files taken from the fsaverage subject that ships with freesurfer, looked for
+# in <freesurfer_dir>/fsaverage first and $FREESURFER_HOME/subjects/fsaverage
+# second. Used to resample an atlas defined on fsaverage onto a subject.
+fsaverage_files:
+  sphere: "surf/{hemi_fs}.sphere.reg"
+  pial: "surf/{hemi_fs}.pial"
+
+# neighbourhood searched around each contact, in units of the combined sigma
+n_sigma: 3.0
+
+# cap (mm) on the nearest-structure and boundary-distance searches
+max_search_dist: 10.0
+
+# orientation written into exported .seg.nrrd files (ras or lps)
+nrrd_orientation: ras
+
+hemi:
+  - L
+  - R
+
+structure_types:
+  L: CORTEX_LEFT
+  R: CORTEX_RIGHT
+
+# tissue classes reported alongside the atlas label
+tissue_labels:
+  - GM
+  - WM
+  - CSF
 
 plugins:
   validator:
