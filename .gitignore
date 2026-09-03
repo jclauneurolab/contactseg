@@ -161,6 +161,3 @@ cython_debug/
 # pixi environments
 .pixi
 *.egg-info
-# atlas volumes: downloaded per resources/atlases/README.md, never committed
-contactseg/resources/atlases/*.nii.gz
-contactseg/resources/atlases/*.annot

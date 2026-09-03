@@ -155,9 +155,13 @@ that turns it into a segmentation in subject space:
 Adding an atlas means adding an entry to that block, not writing a rule. A
 surface atlas may ship as a freesurfer `.annot` or as a `.label.gii`; an
 annotation is converted once and shared across subjects. The Yale Brain Atlas
-is the worked example — two fsaverage annotations dropped into
+is the worked example — two fsaverage annotations in
 `contactseg/resources/atlases/`, with no lookup table to fetch, since the
 parcel names travel inside the annotation. See the README there.
+
+The packaged atlas files are committed, the volumes through git-lfs, so
+`git lfs install` has to have been run before cloning. A clone made without it
+gets 130-byte pointers instead of volumes; `git lfs pull` repairs one.
 
 Resampling an fsaverage atlas needs fsaverage's registration sphere, taken
 from `<freesurfer_dir>/fsaverage/` or `$FREESURFER_HOME/subjects/fsaverage/`
